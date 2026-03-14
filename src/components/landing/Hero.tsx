@@ -12,9 +12,12 @@ interface PlantedFlower {
   size: number;
   rotation: number;
   delay: number;
+  leaving?: boolean;
 }
 
-const MAX_FLOWERS = 60;
+const MAX_FLOWERS = 200;
+const CYCLE_RATE = 4;
+const CYCLE_INTERVAL = 2000;
 const TWO_PI = Math.PI * 2;
 
 function randomGaussian() {
@@ -55,7 +58,7 @@ export default function Hero() {
       });
     }
 
-    const baseR = 197, baseG = 220, baseB = 160;
+    const baseR = 204, baseG = 213, baseB = 174;
     const totalAmp = waves.reduce((sum, w) => sum + w.amp, 0);
     const imageData = ctx.createImageData(W, H);
     const data = imageData.data;
@@ -103,45 +106,73 @@ export default function Hero() {
     return { left: 30, right: 70, top: 20, bottom: 60 };
   }, []);
 
-  // Bloom on load — generate all flowers, set once, animate via CSS delay
+  // Bloom on load, then cycle flowers as a particle effect
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      const zone = getExclusionZone();
-      const centerX = (zone.left + zone.right) / 2;
-      const centerY = (zone.top + zone.bottom) / 2;
-      const radiusX = (zone.right - zone.left) / 2 + 8;
-      const radiusY = (zone.bottom - zone.top) / 2 + 8;
-      const scatter = 8;
+    let idCounter = MAX_FLOWERS;
+    let cycleInterval: ReturnType<typeof setInterval>;
 
+    const makeFlower = (id: string, delay: number): PlantedFlower => {
+      const x = 3 + Math.random() * 94;
+      const t = Math.random() * Math.random();
+      const y = 97 - t * 45; // range ~52% to 97%
+      return {
+        id,
+        x,
+        y,
+        color: Math.random() > 0.5 ? "coral" : "purple",
+        size: 10 + Math.floor(Math.random() * 12),
+        rotation: Math.floor((Math.random() - 0.5) * 40),
+        delay,
+      };
+    };
+
+    const timeout = setTimeout(() => {
       const burst: PlantedFlower[] = [];
       for (let i = 0; i < MAX_FLOWERS; i++) {
-        let x: number, y: number;
-        let attempts = 0;
-        do {
-          const angle = Math.random() * TWO_PI;
-          x = centerX + radiusX * Math.cos(angle) + randomGaussian() * scatter;
-          y = centerY + radiusY * Math.sin(angle) + randomGaussian() * scatter;
-          x = Math.min(97, Math.max(3, x));
-          y = Math.min(97, Math.max(3, y));
-          if (++attempts > 50) break;
-        } while (x > zone.left && x < zone.right && y > zone.top && y < zone.bottom);
-
-        if (attempts <= 50) {
-          burst.push({
-            id: `f-${i}`,
-            x,
-            y,
-            color: Math.random() > 0.5 ? "coral" : "purple",
-            size: 10 + Math.floor(Math.random() * 12),
-            rotation: Math.floor((Math.random() - 0.5) * 40),
-            delay: i * 50,
-          });
-        }
+        burst.push(makeFlower(`f-${i}`, i * 2));
       }
       setFlowers(burst);
+
+      // Start cycling after the bloom finishes
+      const bloomDuration = MAX_FLOWERS * 2 + 700;
+      const cycleTimeout = setTimeout(() => {
+        cycleInterval = setInterval(() => {
+          // Pick indices to cycle out
+          const indices: number[] = [];
+          setFlowers((prev) => {
+            const next = [...prev];
+            for (let j = 0; j < CYCLE_RATE; j++) {
+              let idx: number;
+              do {
+                idx = Math.floor(Math.random() * next.length);
+              } while (next[idx].leaving);
+              next[idx] = { ...next[idx], leaving: true };
+              indices.push(idx);
+            }
+            return next;
+          });
+
+          // After shrink animation, replace with new flowers
+          setTimeout(() => {
+            setFlowers((prev) => {
+              const next = [...prev];
+              for (const idx of indices) {
+                next[idx] = makeFlower(`f-${idCounter++}`, 0);
+              }
+              return next;
+            });
+          }, 1200);
+        }, CYCLE_INTERVAL);
+      }, bloomDuration);
+
+      return () => clearTimeout(cycleTimeout);
     }, 500);
-    return () => clearTimeout(timeout);
-  }, [getExclusionZone]);
+
+    return () => {
+      clearTimeout(timeout);
+      if (cycleInterval) clearInterval(cycleInterval);
+    };
+  }, []);
 
   return (
     <section
@@ -166,15 +197,15 @@ export default function Hero() {
             style={{ fontSize: "clamp(4rem, 8vw, 9rem)" }}
           >
             {WEDDING.couple.partner1}
-            <span className="text-gold italic mx-3 lg:mx-4" style={{ fontSize: "0.45em" }}>
+            <span className="text-white/90 italic mx-3 lg:mx-4" style={{ fontSize: "0.45em" }}>
               &amp;
             </span>
             {WEDDING.couple.partner2}
           </span>
-          <span className="md:hidden block" style={{ fontSize: "clamp(2.5rem, 10vw, 4.5rem)" }}>
+          <span className="md:hidden block" style={{ fontSize: "clamp(5rem, 20vw, 7.5rem)" }}>
             <span className="block">
               {WEDDING.couple.partner1}
-              <span className="text-gold italic ml-2" style={{ fontSize: "0.55em" }}>
+              <span className="text-white/90 italic ml-2" style={{ fontSize: "0.55em" }}>
                 &amp;
               </span>
             </span>
@@ -203,14 +234,14 @@ export default function Hero() {
           </div>
         </div>
 
-        <div className="w-1.5 h-10 sm:h-12 md:h-16 bg-gradient-to-b from-[#8B7355] to-[#6B5640]" />
+        <div className="w-1.5 h-14 sm:h-16 md:h-20 bg-gradient-to-b from-[#D4A373] to-[#B8865A]" />
       </div>
 
       {/* Flowers — staggered via CSS animation-delay */}
       {flowers.map((flower) => (
         <div
           key={flower.id}
-          className="absolute pointer-events-none animate-grow-flower"
+          className={`absolute pointer-events-none ${flower.leaving ? "animate-shrink-flower" : "animate-grow-flower"}`}
           style={{
             left: `${flower.x}%`,
             top: `${flower.y}%`,
