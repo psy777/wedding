@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { buttonVariants } from "@/components/ui/Button";
 
 interface SubmissionConfirmationProps {
   name: string;
@@ -11,33 +12,24 @@ export default function SubmissionConfirmation({
 }: SubmissionConfirmationProps) {
   return (
     <div className="max-w-md mx-auto text-center animate-fade-in-up">
-      <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-green-600 flex items-center justify-center">
-        <svg
-          className="w-8 h-8 text-white"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M5 13l4 4L19 7"
-          />
-        </svg>
-      </div>
+      {/* Gold line accent instead of green circle */}
+      <div className="w-px h-12 bg-gold/50 mx-auto mb-8" />
 
-      <h2 className="font-heading text-3xl text-stone-800 mb-3">
-        {isUpdate ? "RSVP Updated!" : "Thank You!"}
+      <p className="text-lg uppercase tracking-[0.3em] text-gold mb-3 font-body">
+        {isUpdate ? "Updated" : "Confirmed"}
+      </p>
+
+      <h2 className="font-heading text-3xl text-ink font-light mb-3">
+        {isUpdate ? "RSVP Updated" : "Thank You"}
       </h2>
 
-      <p className="text-stone-600 mb-2">
+      <p className="text-xl text-ink/80 mb-2 font-body">
         {isUpdate
           ? `Your RSVP has been updated, ${name}.`
           : `We've received your RSVP, ${name}.`}
       </p>
 
-      <p className="text-stone-500 text-sm mb-8">
+      <p className="text-lg text-clay mb-10 font-body">
         {isUpdate
           ? "Your changes have been saved. You can come back and update again before the deadline."
           : "We can't wait to celebrate with you! You can come back and update your response before the deadline if anything changes."}
@@ -45,7 +37,7 @@ export default function SubmissionConfirmation({
 
       <Link
         href="/"
-        className="inline-block px-6 py-3 bg-stone-800 text-white rounded-md hover:bg-stone-900 transition-colors"
+        className={buttonVariants({ variant: "primary", className: "uppercase tracking-[0.1em]" })}
       >
         Back to Home
       </Link>

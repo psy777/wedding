@@ -1,62 +1,71 @@
 import { WEDDING } from "@/config/wedding";
+import SectionLabel from "@/components/ui/SectionLabel";
 
 export default function TravelSection() {
   return (
-    <section id="travel" className="py-20 px-4 bg-stone-50">
-      <div className="max-w-3xl mx-auto">
-        <h2 className="font-heading text-3xl sm:text-4xl text-stone-800 mb-12 text-center">
-          Travel & Accommodation
+    <section id="travel" className="py-16 sm:py-24 px-4 sm:px-6 md:px-8 bg-parchment">
+      <div className="max-w-2xl mx-auto">
+        <SectionLabel
+          before={[{ color: "purple", size: 14 }]}
+          after={[{ color: "coral", size: 10 }]}
+        >
+          Plan Your Visit
+        </SectionLabel>
+        <h2 className="font-heading text-2xl sm:text-3xl md:text-4xl text-ink font-light mb-10 sm:mb-16">
+          Travel &amp; Accommodation
         </h2>
 
         {/* Hotels */}
-        <div className="space-y-6 mb-12">
-          <h3 className="font-heading text-xl text-stone-700 mb-4">
+        <div className="mb-12 sm:mb-16">
+          <SectionLabel before={[{ color: "coral", size: 10 }]} className="mb-4 sm:mb-6">
             Where to Stay
-          </h3>
-          {WEDDING.travel.hotels.filter((h) => h.name).map((hotel, idx) => (
-            <div
-              key={idx}
-              className="p-6 bg-white rounded-lg border border-stone-200"
-            >
-              <h4 className="font-semibold text-stone-800 text-lg">
-                {hotel.name}
-              </h4>
-              <p className="text-stone-600 text-sm mt-1">{hotel.address}</p>
-              <p className="text-stone-600 text-sm">{hotel.phone}</p>
-              {hotel.notes && (
-                <p className="text-stone-500 text-sm mt-2 italic">
-                  {hotel.notes}
-                </p>
-              )}
-              {hotel.bookingUrl && hotel.bookingUrl !== "#" && (
-                <a
-                  href={hotel.bookingUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-block mt-3 text-sm text-rose-500 hover:text-rose-600 underline underline-offset-4 transition-colors"
-                >
-                  Book Now
-                </a>
-              )}
-            </div>
-          ))}
+          </SectionLabel>
+          <div className="space-y-0">
+            {WEDDING.travel.hotels.filter((h) => h.name).map((hotel, idx) => (
+              <div
+                key={idx}
+                className="py-5 sm:py-6 border-b border-sand/60 first:pt-0 last:border-b-0"
+              >
+                <h4 className="font-heading text-lg sm:text-xl text-ink font-light mb-1">
+                  {hotel.name}
+                </h4>
+                <p className="text-base sm:text-lg text-clay font-body">{hotel.address}</p>
+                <p className="text-base sm:text-lg text-clay font-body">{hotel.phone}</p>
+                {hotel.notes && (
+                  <p className="text-base sm:text-lg text-clay/70 mt-2 italic font-body">
+                    {hotel.notes}
+                  </p>
+                )}
+                {hotel.bookingUrl && hotel.bookingUrl !== "#" && (
+                  <a
+                    href={hotel.bookingUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-block mt-3 text-base sm:text-lg text-ink underline underline-offset-4 decoration-sand hover:decoration-ink transition-colors duration-300 font-body"
+                  >
+                    Book Now
+                  </a>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Directions & Parking */}
-        <div className="grid sm:grid-cols-2 gap-6">
-          <div className="p-6 bg-white rounded-lg border border-stone-200">
-            <h3 className="font-heading text-lg text-stone-700 mb-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 sm:gap-12">
+          <div>
+            <SectionLabel before={[{ color: "purple", size: 10 }]} className="mb-3 sm:mb-4">
               Getting There
-            </h3>
-            <p className="text-stone-600 text-sm leading-relaxed">
+            </SectionLabel>
+            <p className="text-base sm:text-xl text-clay leading-relaxed font-body">
               {WEDDING.travel.directions}
             </p>
           </div>
-          <div className="p-6 bg-white rounded-lg border border-stone-200">
-            <h3 className="font-heading text-lg text-stone-700 mb-3">
+          <div>
+            <SectionLabel before={[{ color: "coral", size: 10 }]} className="mb-3 sm:mb-4">
               Parking
-            </h3>
-            <p className="text-stone-600 text-sm leading-relaxed">
+            </SectionLabel>
+            <p className="text-base sm:text-xl text-clay leading-relaxed font-body">
               {WEDDING.travel.parking}
             </p>
           </div>

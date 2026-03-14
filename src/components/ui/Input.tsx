@@ -1,37 +1,48 @@
-import { InputHTMLAttributes } from "react";
+import * as React from "react";
+import { cn } from "@/lib/utils";
 
-interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
+/** Shared base styles for text inputs and textareas */
+export const inputBaseStyles = [
+  "w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-sand bg-linen/60 text-ink text-base sm:text-lg",
+  "placeholder:text-clay/40 font-body",
+  "focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold/20",
+  "transition-colors duration-200",
+] as const;
+
+export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;
 }
 
-export default function Input({
-  label,
-  error,
-  className = "",
-  id,
-  ...props
-}: InputProps) {
-  const inputId = id || label?.toLowerCase().replace(/\s+/g, "-");
+const Input = React.forwardRef<HTMLInputElement, InputProps>(
+  ({ label, error, className, id, ...props }, ref) => {
+    const inputId = id || label?.toLowerCase().replace(/\s+/g, "-");
 
-  return (
-    <div className="w-full">
-      {label && (
-        <label
-          htmlFor={inputId}
-          className="block text-sm font-medium text-stone-700 mb-1"
-        >
-          {label}
-        </label>
-      )}
-      <input
-        id={inputId}
-        className={`w-full px-4 py-2.5 rounded-md border border-stone-300 bg-white text-stone-800 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-400 focus:border-transparent transition-all duration-200 ${
-          error ? "border-red-600 focus:ring-red-600" : ""
-        } ${className}`}
-        {...props}
-      />
-      {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
-    </div>
-  );
-}
+    return (
+      <div className="w-full">
+        {label && (
+          <label
+            htmlFor={inputId}
+            className="block text-base sm:text-lg font-medium text-clay mb-1.5 tracking-wide font-body"
+          >
+            {label}
+          </label>
+        )}
+        <input
+          id={inputId}
+          ref={ref}
+          className={cn(
+            ...inputBaseStyles,
+            error && "border-wine focus:border-wine focus:ring-wine/20",
+            className
+          )}
+          {...props}
+        />
+        {error && <p className="mt-1.5 text-base sm:text-lg text-wine font-body">{error}</p>}
+      </div>
+    );
+  }
+);
+Input.displayName = "Input";
+
+export default Input;

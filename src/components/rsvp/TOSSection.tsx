@@ -9,12 +9,12 @@ interface TOSSectionProps {
 
 export default function TOSSection({ accepted, onChange }: TOSSectionProps) {
   return (
-    <div className="p-5 bg-stone-50 rounded-lg border border-stone-200">
-      <p className="text-xs uppercase tracking-wider text-stone-400 mb-3">
-        Terms & Conditions
+    <div className="py-5 border-b border-sand/50">
+      <p className="text-lg uppercase tracking-[0.2em] text-gold mb-4 font-body">
+        Terms &amp; Conditions
       </p>
 
-      <div className="h-48 overflow-y-auto p-4 bg-white rounded border border-stone-200 text-sm text-stone-600 leading-relaxed whitespace-pre-line mb-4">
+      <div className="h-48 overflow-y-auto p-4 border border-sand bg-linen/60 text-lg text-clay leading-relaxed whitespace-pre-line mb-4 font-body">
         {WEDDING.tos}
       </div>
 
@@ -23,9 +23,9 @@ export default function TOSSection({ accepted, onChange }: TOSSectionProps) {
           type="checkbox"
           checked={accepted}
           onChange={(e) => onChange(e.target.checked)}
-          className="mt-1 w-4 h-4 rounded border-stone-300 text-stone-800 focus:ring-stone-400 cursor-pointer"
+          className="mt-1 w-4 h-4 border-sand text-ink focus:ring-gold/30 cursor-pointer accent-ink"
         />
-        <span className="text-sm text-stone-700 group-hover:text-stone-900 transition-colors">
+        <span className="text-lg text-clay group-hover:text-ink transition-colors duration-300 font-body">
           I have read and agree to the terms and conditions on behalf of myself
           and all members of my household listed in this RSVP.
         </span>

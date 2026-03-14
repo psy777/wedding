@@ -28,8 +28,8 @@ export default function AddressFields({
   onZipChange,
 }: AddressFieldsProps) {
   return (
-    <div className="p-5 bg-stone-50 rounded-lg border border-stone-200">
-      <p className="text-xs uppercase tracking-wider text-stone-400 mb-4">
+    <div className="py-5 border-b border-sand/50">
+      <p className="text-lg uppercase tracking-[0.2em] text-gold mb-5 font-body">
         Your Contact Information
       </p>
 

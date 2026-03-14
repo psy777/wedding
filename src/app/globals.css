@@ -1,15 +1,7 @@
 @import "tailwindcss";
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-rose-50: #fff1f2;
-  --color-rose-100: #ffe4e6;
-  --color-rose-200: #fecdd3;
-  --color-rose-300: #fda4af;
-  --color-rose-400: #fb7185;
-  --color-rose-500: #f43f5e;
-  --color-rose-600: #e11d48;
+  /* Existing (kept for dashboard) */
   --color-stone-50: #fafaf9;
   --color-stone-100: #f5f5f4;
   --color-stone-200: #e7e5e3;
@@ -23,43 +15,61 @@
   --color-amber-500: #f59e0b;
   --color-amber-600: #d97706;
   --color-amber-700: #b45309;
+  --color-green-500: #22c55e;
   --color-green-600: #16a34a;
   --color-green-700: #15803d;
+  --color-red-50: #fef2f2;
   --color-red-600: #dc2626;
-  --font-heading: var(--font-playfair);
-  --font-body: var(--font-inter);
+  --color-rose-50: #fff1f2;
+  --color-rose-100: #ffe4e6;
+  --color-rose-200: #fecdd3;
+  --color-rose-300: #fda4af;
+  --color-rose-400: #fb7185;
+  --color-rose-500: #f43f5e;
+  --color-rose-600: #e11d48;
+
+  /* Custom palette */
+  --color-linen: #F8F3FF;
+  --color-parchment: #EDE6F2;
+  --color-sand: #C5DCA0;
+  --color-clay: #606D5D;
+  --color-ink: #171A21;
+  --color-gold: #B084CC;
+  --color-gold-light: #E2C2FF;
+  --color-wine: #DB5A42;
+  --color-wine-light: #FE5F55;
+  --color-sage: #606D5D;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-heading: var(--font-cormorant-garamond);
+  --font-body: var(--font-karla);
 }
 
 :root {
-  --background: #fafaf9;
-  --foreground: #292524;
+  --background: #F8F3FF;
+  --foreground: #171A21;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-body), system-ui, sans-serif;
+  font-family: var(--font-karla), system-ui, sans-serif;
 }
 
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-  font-family: var(--font-heading), serif;
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-cormorant-garamond), serif;
 }
 
-/* Smooth scroll */
 html {
   scroll-behavior: smooth;
 }
 
-/* Fade-in animation */
+/* Entrance animation — exponential easing (ease-out-expo) */
 @keyframes fadeInUp {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(28px);
   }
   to {
     opacity: 1;
@@ -67,21 +77,46 @@ html {
   }
 }
 
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
 .animate-fade-in-up {
-  animation: fadeInUp 0.6s ease-out forwards;
+  animation: fadeInUp 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-.animation-delay-200 {
-  animation-delay: 0.2s;
-  opacity: 0;
+.animate-fade-in {
+  animation: fadeIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-.animation-delay-400 {
-  animation-delay: 0.4s;
-  opacity: 0;
+/* Decorative flower hover */
+.flower {
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: default;
 }
 
-.animation-delay-600 {
-  animation-delay: 0.6s;
-  opacity: 0;
+.flower:hover {
+  transform: rotate(30deg) scale(1.2);
 }
+
+/* Interactive garden animations */
+@keyframes growFlower {
+  0% {
+    transform: scale(0) rotate(-45deg);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.25) rotate(8deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+.animate-grow-flower {
+  animation: growFlower 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+

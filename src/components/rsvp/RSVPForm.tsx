@@ -8,6 +8,8 @@ import ChildrenSection from "./ChildrenSection";
 import AddressFields from "./AddressFields";
 import TOSSection from "./TOSSection";
 import Button from "@/components/ui/Button";
+import { inputBaseStyles } from "@/components/ui/Input";
+import { cn } from "@/lib/utils";
 
 interface RSVPFormProps {
   household: HouseholdData;
@@ -118,18 +120,21 @@ export default function RSVPForm({
   return (
     <form onSubmit={handleSubmit} className="max-w-2xl mx-auto animate-fade-in-up">
       {/* Greeting */}
-      <div className="text-center mb-8">
-        <h2 className="font-heading text-3xl text-stone-800 mb-2">
-          Welcome, {household.headOfHousehold}!
+      <div className="text-center mb-10">
+        <p className="text-lg uppercase tracking-[0.3em] text-gold mb-3 font-body">
+          Your Response
+        </p>
+        <h2 className="font-heading text-3xl text-ink font-light mb-2">
+          Welcome, {household.headOfHousehold}
         </h2>
         {alreadySubmitted && (
-          <p className="text-amber-600 text-sm">
+          <p className="text-gold text-lg font-body">
             You&apos;ve already submitted your RSVP. Feel free to update your response below.
           </p>
         )}
       </div>
 
-      <div className="space-y-6">
+      <div>
         {/* Head of household */}
         <PersonCard
           name={household.headOfHousehold}
@@ -199,8 +204,8 @@ export default function RSVPForm({
         />
 
         {/* Dietary notes */}
-        <div className="p-5 bg-stone-50 rounded-lg border border-stone-200">
-          <p className="text-xs uppercase tracking-wider text-stone-400 mb-3">
+        <div className="py-5 border-b border-sand/50">
+          <p className="text-lg uppercase tracking-[0.2em] text-gold mb-4 font-body">
             Dietary Restrictions
           </p>
           <textarea
@@ -210,7 +215,7 @@ export default function RSVPForm({
             }
             placeholder="Any food allergies or dietary restrictions we should know about?"
             rows={3}
-            className="w-full px-4 py-2.5 rounded-md border border-stone-300 bg-white text-stone-800 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-400 focus:border-transparent transition-all duration-200 resize-none"
+            className={cn(...inputBaseStyles, "resize-none")}
           />
         </div>
 
@@ -224,17 +229,19 @@ export default function RSVPForm({
 
         {/* Submit */}
         {error && (
-          <p className="text-red-600 text-sm text-center">{error}</p>
+          <p className="text-wine text-lg text-center mt-6">{error}</p>
         )}
 
-        <Button
-          type="submit"
-          loading={submitting}
-          disabled={!canSubmit}
-          className="w-full text-lg py-4"
-        >
-          {alreadySubmitted ? "Update RSVP" : "Submit RSVP"}
-        </Button>
+        <div className="mt-8">
+          <Button
+            type="submit"
+            loading={submitting}
+            disabled={!canSubmit}
+            className="w-full text-xl py-4"
+          >
+            {alreadySubmitted ? "Update RSVP" : "Submit RSVP"}
+          </Button>
+        </div>
       </div>
     </form>
   );

@@ -1,67 +1,68 @@
 import { WEDDING } from "@/config/wedding";
+import Flower from "@/components/ui/Flower";
+import SectionLabel from "@/components/ui/SectionLabel";
 
 export default function EventDetails() {
   return (
-    <section id="details" className="py-20 px-4 bg-white">
-      <div className="max-w-3xl mx-auto text-center">
-        <h2 className="font-heading text-3xl sm:text-4xl text-stone-800 mb-12">
+    <section id="details" className="py-16 sm:py-24 px-4 sm:px-6 md:px-8 bg-linen">
+      <div className="max-w-2xl mx-auto">
+        <SectionLabel
+          before={[{ color: "coral", size: 14 }]}
+          after={[{ color: "purple", size: 10 }]}
+        >
+          The Day
+        </SectionLabel>
+        <h2 className="font-heading text-2xl sm:text-3xl md:text-4xl text-ink font-light mb-10 sm:mb-16">
           Event Details
         </h2>
 
-        <div className="grid sm:grid-cols-2 gap-10">
+        {/* Timeline layout */}
+        <div className="space-y-0">
           {/* Ceremony */}
-          <div className="p-8 rounded-lg bg-stone-50">
-            <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-rose-100 flex items-center justify-center">
-              <svg
-                className="w-6 h-6 text-rose-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                />
-              </svg>
+          <div className="grid grid-cols-[80px_1px_1fr] sm:grid-cols-[160px_1px_1fr] gap-4 sm:gap-8 items-start">
+            <div className="text-right pt-0.5">
+              <p className="text-base sm:text-lg text-clay tracking-wide font-body">
+                {WEDDING.time.ceremony}
+              </p>
             </div>
-            <h3 className="font-heading text-xl text-stone-800 mb-2">
-              Ceremony
-            </h3>
-            <p className="text-stone-600">{WEDDING.time.ceremony}</p>
+            <div className="relative flex flex-col items-center">
+              <Flower color="purple" size={10} className="mt-0.5 shrink-0" />
+              <div className="w-px flex-1 bg-sand" />
+            </div>
+            <div className="pb-10 sm:pb-12">
+              <h3 className="font-heading text-xl sm:text-2xl text-ink font-light">
+                Ceremony
+              </h3>
+            </div>
           </div>
 
           {/* Reception */}
-          <div className="p-8 rounded-lg bg-stone-50">
-            <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-amber-100 flex items-center justify-center">
-              <svg
-                className="w-6 h-6 text-amber-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
-                />
-              </svg>
+          <div className="grid grid-cols-[80px_1px_1fr] sm:grid-cols-[160px_1px_1fr] gap-4 sm:gap-8 items-start">
+            <div className="text-right pt-0.5">
+              <p className="text-base sm:text-lg text-clay tracking-wide font-body">
+                {WEDDING.time.reception}
+              </p>
             </div>
-            <h3 className="font-heading text-xl text-stone-800 mb-2">
-              Reception
-            </h3>
-            <p className="text-stone-600">{WEDDING.time.reception}</p>
+            <div className="relative flex flex-col items-center">
+              <Flower color="coral" size={10} className="mt-0.5 shrink-0" />
+            </div>
+            <div>
+              <h3 className="font-heading text-xl sm:text-2xl text-ink font-light">
+                Reception
+              </h3>
+            </div>
           </div>
         </div>
 
         {/* Venue */}
-        <div className="mt-12 p-8 rounded-lg bg-stone-50">
-          <h3 className="font-heading text-xl text-stone-800 mb-2">
+        <div className="mt-12 sm:mt-16 pt-8 sm:pt-10 border-t border-sand/60">
+          <SectionLabel before={[{ color: "purple", size: 12 }]}>
+            Venue
+          </SectionLabel>
+          <h3 className="font-heading text-xl sm:text-2xl text-ink font-light mb-2">
             {WEDDING.venue.name}
           </h3>
-          <p className="text-stone-600">
+          <p className="text-base sm:text-xl text-clay leading-relaxed font-body">
             {WEDDING.venue.address}
             <br />
             {WEDDING.venue.city}, {WEDDING.venue.state} {WEDDING.venue.zip}
@@ -70,18 +71,20 @@ export default function EventDetails() {
             href={WEDDING.venue.mapUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-block mt-4 text-sm text-rose-500 hover:text-rose-600 underline underline-offset-4 transition-colors"
+            className="inline-block mt-4 text-base sm:text-lg text-ink underline underline-offset-4 decoration-sand hover:decoration-ink transition-colors duration-300 font-body"
           >
             View on Google Maps
           </a>
         </div>
 
         {/* Dress Code */}
-        <div className="mt-10">
-          <p className="text-sm uppercase tracking-[0.2em] text-stone-400 mb-1">
+        <div className="mt-10 sm:mt-12 pt-8 sm:pt-10 border-t border-sand/60">
+          <SectionLabel before={[{ color: "coral", size: 12 }]}>
             Dress Code
+          </SectionLabel>
+          <p className="font-heading text-xl sm:text-2xl text-ink font-light">
+            {WEDDING.dressCode}
           </p>
-          <p className="text-lg text-stone-700">{WEDDING.dressCode}</p>
         </div>
       </div>
     </section>

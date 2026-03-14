@@ -1,52 +1,49 @@
-const env = (key: string, fallback = ""): string =>
-  process.env[key] ?? fallback;
-
 export const WEDDING = {
   couple: {
-    partner1: env("NEXT_PUBLIC_PARTNER1", "Partner One"),
-    partner2: env("NEXT_PUBLIC_PARTNER2", "Partner Two"),
+    partner1: process.env.NEXT_PUBLIC_PARTNER1 ?? "Partner One",
+    partner2: process.env.NEXT_PUBLIC_PARTNER2 ?? "Partner Two",
   },
   date: {
-    full: env("NEXT_PUBLIC_DATE_FULL", "Saturday, January 1st, 2027"),
-    short: env("NEXT_PUBLIC_DATE_SHORT", "January 1, 2027"),
-    iso: env("NEXT_PUBLIC_DATE_ISO", "2027-01-01"),
+    full: process.env.NEXT_PUBLIC_DATE_FULL ?? "Saturday, January 1st, 2027",
+    short: process.env.NEXT_PUBLIC_DATE_SHORT ?? "January 1, 2027",
+    iso: process.env.NEXT_PUBLIC_DATE_ISO ?? "2027-01-01",
   },
   time: {
-    ceremony: env("NEXT_PUBLIC_TIME_CEREMONY", "4:00 PM"),
-    reception: env("NEXT_PUBLIC_TIME_RECEPTION", "5:30 PM"),
+    ceremony: process.env.NEXT_PUBLIC_TIME_CEREMONY ?? "4:00 PM",
+    reception: process.env.NEXT_PUBLIC_TIME_RECEPTION ?? "5:30 PM",
   },
   venue: {
-    name: env("NEXT_PUBLIC_VENUE_NAME", "Venue Name"),
-    address: env("NEXT_PUBLIC_VENUE_ADDRESS", "123 Venue St"),
-    city: env("NEXT_PUBLIC_VENUE_CITY", "City"),
-    state: env("NEXT_PUBLIC_VENUE_STATE", "ST"),
-    zip: env("NEXT_PUBLIC_VENUE_ZIP", "00000"),
-    mapUrl: env("NEXT_PUBLIC_VENUE_MAP_URL", "#"),
+    name: process.env.NEXT_PUBLIC_VENUE_NAME ?? "Venue Name",
+    address: process.env.NEXT_PUBLIC_VENUE_ADDRESS ?? "123 Venue St",
+    city: process.env.NEXT_PUBLIC_VENUE_CITY ?? "City",
+    state: process.env.NEXT_PUBLIC_VENUE_STATE ?? "ST",
+    zip: process.env.NEXT_PUBLIC_VENUE_ZIP ?? "00000",
+    mapUrl: process.env.NEXT_PUBLIC_VENUE_MAP_URL ?? "#",
   },
-  dressCode: env("NEXT_PUBLIC_DRESS_CODE", "Semi-formal / Cocktail Attire"),
+  dressCode: process.env.NEXT_PUBLIC_DRESS_CODE ?? "Semi-formal / Cocktail Attire",
   rsvpDeadline: {
-    display: env("NEXT_PUBLIC_RSVP_DEADLINE_DISPLAY", "December 1, 2026"),
-    iso: env("NEXT_PUBLIC_RSVP_DEADLINE_ISO", "2026-12-01T23:59:59Z"),
+    display: process.env.NEXT_PUBLIC_RSVP_DEADLINE_DISPLAY ?? "December 1, 2026",
+    iso: process.env.NEXT_PUBLIC_RSVP_DEADLINE_ISO ?? "2026-12-01T23:59:59Z",
   },
   travel: {
     hotels: [
       {
-        name: env("NEXT_PUBLIC_HOTEL1_NAME"),
-        address: env("NEXT_PUBLIC_HOTEL1_ADDRESS"),
-        phone: env("NEXT_PUBLIC_HOTEL1_PHONE"),
-        notes: env("NEXT_PUBLIC_HOTEL1_NOTES"),
-        bookingUrl: env("NEXT_PUBLIC_HOTEL1_BOOKING_URL", "#"),
+        name: process.env.NEXT_PUBLIC_HOTEL1_NAME ?? "",
+        address: process.env.NEXT_PUBLIC_HOTEL1_ADDRESS ?? "",
+        phone: process.env.NEXT_PUBLIC_HOTEL1_PHONE ?? "",
+        notes: process.env.NEXT_PUBLIC_HOTEL1_NOTES ?? "",
+        bookingUrl: process.env.NEXT_PUBLIC_HOTEL1_BOOKING_URL ?? "#",
       },
       {
-        name: env("NEXT_PUBLIC_HOTEL2_NAME"),
-        address: env("NEXT_PUBLIC_HOTEL2_ADDRESS"),
-        phone: env("NEXT_PUBLIC_HOTEL2_PHONE"),
-        notes: env("NEXT_PUBLIC_HOTEL2_NOTES"),
-        bookingUrl: env("NEXT_PUBLIC_HOTEL2_BOOKING_URL", "#"),
+        name: process.env.NEXT_PUBLIC_HOTEL2_NAME ?? "",
+        address: process.env.NEXT_PUBLIC_HOTEL2_ADDRESS ?? "",
+        phone: process.env.NEXT_PUBLIC_HOTEL2_PHONE ?? "",
+        notes: process.env.NEXT_PUBLIC_HOTEL2_NOTES ?? "",
+        bookingUrl: process.env.NEXT_PUBLIC_HOTEL2_BOOKING_URL ?? "#",
       },
     ],
-    parking: env("NEXT_PUBLIC_PARKING_INFO", "Parking details coming soon."),
-    directions: env("NEXT_PUBLIC_DIRECTIONS", "Directions coming soon."),
+    parking: process.env.NEXT_PUBLIC_PARKING_INFO ?? "Parking details coming soon.",
+    directions: process.env.NEXT_PUBLIC_DIRECTIONS ?? "Directions coming soon.",
   },
   tos: `TERMS & CONDITIONS OF ATTENDANCE
 

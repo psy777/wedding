@@ -18,30 +18,30 @@ export default function ChildrenSection({
   onNameChange,
 }: ChildrenSectionProps) {
   return (
-    <div className="p-5 bg-stone-50 rounded-lg border border-stone-200">
-      <p className="text-xs uppercase tracking-wider text-stone-400 mb-1">
+    <div className="py-5 border-b border-sand/50">
+      <p className="text-lg uppercase tracking-[0.2em] text-gold mb-1 font-body">
         Children
       </p>
-      <p className="text-sm text-stone-600 mb-3">
+      <p className="text-lg text-clay mb-4 font-body">
         You may bring up to {maxChildren} child{maxChildren !== 1 ? "ren" : ""}.
       </p>
 
       <div className="space-y-4">
         {/* Counter */}
         <div className="flex items-center gap-4">
-          <label className="text-sm font-medium text-stone-700">
+          <label className="text-lg font-medium text-ink font-body">
             How many children will attend?
           </label>
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => onCountChange(Math.max(0, childrenCount - 1))}
-              className="w-8 h-8 flex items-center justify-center rounded-md border border-stone-300 text-stone-600 hover:bg-stone-100 transition-colors"
+              className="w-8 h-8 flex items-center justify-center border border-sand text-clay hover:border-ink hover:text-ink transition-colors duration-300 disabled:opacity-30 disabled:cursor-not-allowed"
               disabled={childrenCount === 0}
             >
               -
             </button>
-            <span className="w-8 text-center font-medium text-stone-800">
+            <span className="w-8 text-center font-medium text-ink font-body">
               {childrenCount}
             </span>
             <button
@@ -49,7 +49,7 @@ export default function ChildrenSection({
               onClick={() =>
                 onCountChange(Math.min(maxChildren, childrenCount + 1))
               }
-              className="w-8 h-8 flex items-center justify-center rounded-md border border-stone-300 text-stone-600 hover:bg-stone-100 transition-colors"
+              className="w-8 h-8 flex items-center justify-center border border-sand text-clay hover:border-ink hover:text-ink transition-colors duration-300 disabled:opacity-30 disabled:cursor-not-allowed"
               disabled={childrenCount >= maxChildren}
             >
               +

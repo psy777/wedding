@@ -20,25 +20,28 @@ export default function CodeEntry({ onLookup, loading, error }: CodeEntryProps) 
 
   return (
     <div className="max-w-md mx-auto text-center animate-fade-in-up">
-      <h1 className="font-heading text-3xl sm:text-4xl text-stone-800 mb-3">
+      <p className="text-lg uppercase tracking-[0.3em] text-gold mb-3 font-body">
+        You&apos;re Invited
+      </p>
+      <h1 className="font-heading text-3xl sm:text-4xl text-ink font-light mb-3">
         RSVP
       </h1>
-      <p className="text-stone-600 mb-8">
+      <p className="text-xl text-clay mb-10 font-body">
         Enter the code from your invitation to get started.
       </p>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-5">
         <Input
           type="text"
           placeholder="e.g. SMITH2026"
           value={code}
           onChange={(e) => setCode(e.target.value.toUpperCase())}
-          className="text-center text-lg tracking-widest"
+          className="text-center text-xl tracking-[0.15em]"
           autoFocus
         />
 
         {error && (
-          <p className="text-red-600 text-sm">{error}</p>
+          <p className="text-wine text-lg">{error}</p>
         )}
 
         <Button

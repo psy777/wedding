@@ -69,7 +69,7 @@ export default function RSVPPage() {
   return (
     <>
       <Navbar />
-      <main className="min-h-screen bg-stone-50 pt-24 pb-16 px-4">
+      <main className="min-h-screen bg-linen pt-20 sm:pt-24 pb-12 sm:pb-16 px-4 sm:px-6">
         {step === "code" && (
           <CodeEntry
             onLookup={handleLookup}

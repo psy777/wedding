@@ -1,6 +1,7 @@
 "use client";
 
 import Input from "@/components/ui/Input";
+import AttendanceToggle from "./AttendanceToggle";
 
 interface PlusOneSectionProps {
   plusOneName: string;
@@ -16,15 +17,15 @@ export default function PlusOneSection({
   onAttendingChange,
 }: PlusOneSectionProps) {
   return (
-    <div className="p-5 bg-stone-50 rounded-lg border border-stone-200">
-      <p className="text-xs uppercase tracking-wider text-stone-400 mb-1">
+    <div className="py-5 border-b border-sand/50">
+      <p className="text-lg uppercase tracking-[0.2em] text-gold mb-1 font-body">
         Plus One
       </p>
-      <p className="text-sm text-stone-600 mb-3">
+      <p className="text-lg text-clay mb-4 font-body">
         You&apos;re welcome to bring a guest!
       </p>
 
-      <div className="space-y-3">
+      <div className="space-y-4">
         <Input
           label="Guest Name"
           placeholder="Enter your guest's full name"
@@ -33,30 +34,12 @@ export default function PlusOneSection({
         />
 
         {plusOneName.trim() && (
-          <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={() => onAttendingChange("attending")}
-              className={`flex-1 py-2.5 px-4 rounded-md text-sm font-medium transition-all duration-200 border ${
-                plusOneAttending === "attending"
-                  ? "bg-green-600 text-white border-green-600"
-                  : "bg-white text-stone-600 border-stone-300 hover:border-green-600 hover:text-green-600"
-              }`}
-            >
-              Attending
-            </button>
-            <button
-              type="button"
-              onClick={() => onAttendingChange("not_attending")}
-              className={`flex-1 py-2.5 px-4 rounded-md text-sm font-medium transition-all duration-200 border ${
-                plusOneAttending === "not_attending"
-                  ? "bg-stone-600 text-white border-stone-600"
-                  : "bg-white text-stone-600 border-stone-300 hover:border-stone-600"
-              }`}
-            >
-              Not Attending
-            </button>
-          </div>
+          <AttendanceToggle
+            value={plusOneAttending}
+            onChange={onAttendingChange}
+            acceptLabel="Attending"
+            declineLabel="Not Attending"
+          />
         )}
       </div>
     </div>
