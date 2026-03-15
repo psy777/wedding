@@ -1,12 +1,23 @@
 import { getDb } from "@/db";
-import { budgetItems, budgetAttachments, weddingSettings } from "@/db/schema";
-import { eq, asc } from "drizzle-orm";
+import {
+  budgetCategories,
+  budgetItems,
+  budgetAttachments,
+  weddingSettings,
+} from "@/db/schema";
+import { asc, eq } from "drizzle-orm";
 import BudgetSection from "@/components/plan/BudgetSection";
 
 export default async function BudgetPage() {
   const db = getDb();
 
   const [settings] = await db.select().from(weddingSettings).limit(1);
+
+  const categories = await db
+    .select()
+    .from(budgetCategories)
+    .orderBy(asc(budgetCategories.sortOrder));
+
   const items = await db
     .select()
     .from(budgetItems)
@@ -18,31 +29,72 @@ export default async function BudgetPage() {
     .orderBy(asc(budgetAttachments.createdAt));
 
   // Group attachments by budget item
-  const attachmentsByItem = new Map<number, typeof attachments>();
+  const attachmentsByItem = new Map<
+    number,
+    {
+      id: number;
+      fileName: string;
+      fileUrl: string;
+      fileSize: number | null;
+      contentType: string | null;
+    }[]
+  >();
   for (const att of attachments) {
     const list = attachmentsByItem.get(att.budgetItemId) || [];
-    list.push(att);
+    list.push({
+      id: att.id,
+      fileName: att.fileName,
+      fileUrl: att.fileUrl,
+      fileSize: att.fileSize,
+      contentType: att.contentType,
+    });
     attachmentsByItem.set(att.budgetItemId, list);
+  }
+
+  // Group items by category
+  const itemsByCategory = new Map<
+    number,
+    {
+      id: number;
+      categoryId: number;
+      name: string;
+      estimated: number;
+      actual: number;
+      paid: boolean;
+      notes: string;
+      attachments: {
+        id: number;
+        fileName: string;
+        fileUrl: string;
+        fileSize: number | null;
+        contentType: string | null;
+      }[];
+    }[]
+  >();
+  for (const item of items) {
+    const list = itemsByCategory.get(item.categoryId) || [];
+    list.push({
+      id: item.id,
+      categoryId: item.categoryId,
+      name: item.name,
+      estimated: item.estimated ?? 0,
+      actual: item.actual ?? 0,
+      paid: item.paid ?? false,
+      notes: item.notes ?? "",
+      attachments: attachmentsByItem.get(item.id) || [],
+    });
+    itemsByCategory.set(item.categoryId, list);
   }
 
   return (
     <BudgetSection
       totalBudget={settings?.totalBudget || 0}
-      items={items.map((i) => ({
-        id: i.id,
-        category: i.category,
-        name: i.name,
-        estimated: i.estimated ?? 0,
-        actual: i.actual ?? 0,
-        paid: i.paid ?? false,
-        notes: i.notes ?? "",
-        attachments: (attachmentsByItem.get(i.id) || []).map((a) => ({
-          id: a.id,
-          fileName: a.fileName,
-          fileUrl: a.fileUrl,
-          fileSize: a.fileSize,
-          contentType: a.contentType,
-        })),
+      categories={categories.map((cat) => ({
+        id: cat.id,
+        name: cat.name,
+        budgetAmount: cat.budgetAmount ?? 0,
+        sortOrder: cat.sortOrder ?? 0,
+        items: itemsByCategory.get(cat.id) || [],
       }))}
     />
   );

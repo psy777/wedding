@@ -1,5 +1,7 @@
+"use client";
+
 import Link from "next/link";
-import { buttonVariants } from "@/components/ui/Button";
+import { buttonVariants } from "@/components/ui/button";
 
 interface SubmissionConfirmationProps {
   name: string;
@@ -37,7 +39,7 @@ export default function SubmissionConfirmation({
 
       <Link
         href="/"
-        className={buttonVariants({ variant: "primary", className: "uppercase tracking-[0.1em]" })}
+        className={buttonVariants({ variant: "default", className: "uppercase tracking-[0.1em]" })}
       >
         Back to Home
       </Link>

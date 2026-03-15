@@ -1,6 +1,7 @@
 "use client";
 
-import Input from "@/components/ui/Input";
+import Input from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface AddressFieldsProps {
   phone: string;
@@ -34,42 +35,46 @@ export default function AddressFields({
       </p>
 
       <div className="space-y-4">
-        <Input
-          label="Phone Number"
-          type="tel"
-          placeholder="(512) 555-0100"
-          value={phone}
-          onChange={(e) => onPhoneChange(e.target.value)}
-        />
+        <div className="space-y-1.5">
+          <Label>Phone Number</Label>
+          <Input
+            type="tel"
+            placeholder="(512) 555-0100"
+            value={phone}
+            onChange={(e) => onPhoneChange(e.target.value)}
+          />
+        </div>
 
-        <Input
-          label="Street Address"
-          placeholder="123 Main St"
-          value={streetAddress}
-          onChange={(e) => onStreetChange(e.target.value)}
-        />
+        <div className="space-y-1.5">
+          <Label>Street Address</Label>
+          <Input
+            placeholder="123 Main St"
+            value={streetAddress}
+            onChange={(e) => onStreetChange(e.target.value)}
+          />
+        </div>
 
         <div className="grid grid-cols-5 gap-3">
-          <div className="col-span-2">
+          <div className="col-span-2 space-y-1.5">
+            <Label>City</Label>
             <Input
-              label="City"
               placeholder="City"
               value={city}
               onChange={(e) => onCityChange(e.target.value)}
             />
           </div>
-          <div className="col-span-1">
+          <div className="col-span-1 space-y-1.5">
+            <Label>State</Label>
             <Input
-              label="State"
               placeholder="TX"
               value={state}
               onChange={(e) => onStateChange(e.target.value)}
               maxLength={2}
             />
           </div>
-          <div className="col-span-2">
+          <div className="col-span-2 space-y-1.5">
+            <Label>Zip</Label>
             <Input
-              label="Zip"
               placeholder="78701"
               value={zip}
               onChange={(e) => onZipChange(e.target.value)}

@@ -5,6 +5,7 @@ import TravelSection from "@/components/landing/TravelSection";
 import CTASection from "@/components/landing/CTASection";
 import Flower from "@/components/ui/Flower";
 import SectionLabel from "@/components/ui/SectionLabel";
+import { getWeddingConfig } from "@/lib/get-wedding-config";
 
 function RegistrySection() {
   return (
@@ -44,20 +45,41 @@ function SageDivider() {
   );
 }
 
-export default function Home() {
+export default async function Home() {
+  const config = await getWeddingConfig();
+
   return (
     <>
-      <Navbar />
+      <Navbar
+        partner1={config.couple.partner1}
+        partner2={config.couple.partner2}
+      />
       <main>
-        <Hero />
+        <Hero
+          partner1={config.couple.partner1}
+          partner2={config.couple.partner2}
+          dateFull={config.date.full}
+          venueName={config.venue.name}
+          venueCity={config.venue.city}
+          venueState={config.venue.state}
+        />
         <SageDivider />
-        <EventDetails />
+        <EventDetails
+          ceremonyTime={config.time.ceremony}
+          receptionTime={config.time.reception}
+          venue={config.venue}
+          dressCode={config.dressCode}
+        />
         <SageDivider />
-        <TravelSection />
+        <TravelSection
+          hotels={config.travel.hotels}
+          directions={config.travel.directions}
+          parking={config.travel.parking}
+        />
         <SageDivider />
         <RegistrySection />
         <SageDivider />
-        <CTASection />
+        <CTASection rsvpDeadlineDisplay={config.rsvpDeadline.display} />
       </main>
       <footer className="py-6 sm:py-8 text-center text-base sm:text-lg text-clay tracking-wide bg-parchment border-t border-sand/40 font-body">
         <p>Made with love</p>

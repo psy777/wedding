@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
-import { put } from "@vercel/blob";
+import { UTApi } from "uploadthing/server";
+
+const utapi = new UTApi();
 import { getDb } from "@/db";
 import { budgetAttachments } from "@/db/schema";
 import { revalidatePath } from "next/cache";
@@ -17,11 +19,14 @@ export async function POST(request: Request) {
       );
     }
 
-    const blob = await put(
-      `wedding-receipts/${budgetItemId}/${file.name}`,
-      file,
-      { access: "public" }
-    );
+    const response = await utapi.uploadFiles(file);
+
+    if (response.error) {
+      return NextResponse.json(
+        { error: response.error.message },
+        { status: 500 }
+      );
+    }
 
     const db = getDb();
     const [attachment] = await db
@@ -29,7 +34,7 @@ export async function POST(request: Request) {
       .values({
         budgetItemId: parseInt(budgetItemId),
         fileName: file.name,
-        fileUrl: blob.url,
+        fileUrl: response.data.ufsUrl,
         fileSize: file.size,
         contentType: file.type,
       })
@@ -41,7 +46,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("Upload error:", error);
     return NextResponse.json(
-      { error: "Upload failed. Ensure BLOB_READ_WRITE_TOKEN is set." },
+      { error: "Upload failed. Ensure UPLOADTHING_TOKEN is set." },
       { status: 500 }
     );
   }

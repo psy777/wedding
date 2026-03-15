@@ -1,7 +1,21 @@
-import { WEDDING } from "@/config/wedding";
 import SectionLabel from "@/components/ui/SectionLabel";
 
-export default function TravelSection() {
+interface Hotel {
+  id: number;
+  name: string;
+  address: string;
+  phone: string;
+  notes: string;
+  bookingUrl: string;
+}
+
+interface Props {
+  hotels: Hotel[];
+  directions: string;
+  parking: string;
+}
+
+export default function TravelSection({ hotels, directions, parking }: Props) {
   return (
     <section id="travel" className="py-16 sm:py-24 px-4 sm:px-6 md:px-8 bg-parchment">
       <div className="max-w-2xl mx-auto">
@@ -21,9 +35,9 @@ export default function TravelSection() {
             Where to Stay
           </SectionLabel>
           <div className="space-y-0">
-            {WEDDING.travel.hotels.filter((h) => h.name).map((hotel, idx) => (
+            {hotels.filter((h) => h.name).map((hotel) => (
               <div
-                key={idx}
+                key={hotel.id}
                 className="py-5 sm:py-6 border-b border-sand/60 first:pt-0 last:border-b-0"
               >
                 <h4 className="font-heading text-lg sm:text-xl text-ink font-light mb-1">
@@ -58,7 +72,7 @@ export default function TravelSection() {
               Getting There
             </SectionLabel>
             <p className="text-base sm:text-xl text-clay leading-relaxed font-body">
-              {WEDDING.travel.directions}
+              {directions}
             </p>
           </div>
           <div>
@@ -66,7 +80,7 @@ export default function TravelSection() {
               Parking
             </SectionLabel>
             <p className="text-base sm:text-xl text-clay leading-relaxed font-body">
-              {WEDDING.travel.parking}
+              {parking}
             </p>
           </div>
         </div>

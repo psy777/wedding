@@ -1,6 +1,6 @@
 "use client";
 
-import Input from "@/components/ui/Input";
+import Input from "@/components/ui/input";
 
 interface ChildrenSectionProps {
   maxChildren: number;
@@ -63,8 +63,8 @@ export default function ChildrenSection({
             {Array.from({ length: childrenCount }).map((_, idx) => (
               <Input
                 key={idx}
-                label={`Child ${idx + 1} Name`}
-                placeholder={`Enter child's name`}
+                aria-label={`Child ${idx + 1} Name`}
+                placeholder={`Child ${idx + 1} name`}
                 value={childrenNames[idx] || ""}
                 onChange={(e) => onNameChange(idx, e.target.value)}
               />

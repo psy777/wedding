@@ -5,10 +5,18 @@ import { useState } from "react";
 import { WEDDING } from "@/config/wedding";
 import Sheet from "@/components/ui/Sheet";
 import Flower from "@/components/ui/Flower";
-import { buttonVariants } from "@/components/ui/Button";
+import { buttonVariants } from "@/components/ui/button";
 
-export default function Navbar() {
+interface Props {
+  partner1?: string;
+  partner2?: string;
+}
+
+export default function Navbar({ partner1, partner2 }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
+
+  const p1 = partner1 || WEDDING.couple.partner1;
+  const p2 = partner2 || WEDDING.couple.partner2;
 
   return (
     <>
@@ -19,7 +27,7 @@ export default function Navbar() {
               href="/"
               className="font-heading text-xl sm:text-2xl text-ink tracking-[0.06em] font-light"
             >
-              {WEDDING.couple.partner1} & {WEDDING.couple.partner2}
+              {p1} & {p2}
             </Link>
 
             {/* Desktop nav */}
@@ -44,7 +52,7 @@ export default function Navbar() {
               </Link>
               <Link
                 href="/rsvp"
-                className={buttonVariants({ variant: "primary", size: "sm", className: "uppercase tracking-[0.1em]" })}
+                className={buttonVariants({ variant: "default", size: "sm", className: "uppercase tracking-[0.1em]" })}
               >
                 RSVP
               </Link>
@@ -96,7 +104,7 @@ export default function Navbar() {
             <div className="border-t border-sand/40 pt-6 mt-2">
               <Link
                 href="/rsvp"
-                className={buttonVariants({ variant: "primary", className: "block w-full text-center text-xl uppercase tracking-[0.1em]" })}
+                className={buttonVariants({ variant: "default", className: "block w-full text-center text-xl uppercase tracking-[0.1em]" })}
                 onClick={() => setMenuOpen(false)}
               >
                 RSVP

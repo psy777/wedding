@@ -82,25 +82,182 @@ function slugify(text: string): string {
     .replace(/(^-|-$)/g, "");
 }
 
-// ── Budget Categories ──────────────────────────────────────────────
+// ── Budget Sections & Default Expenses ─────────────────────────────
 
-export const BUDGET_CATEGORIES = [
-  "Venue & Rentals",
-  "Catering & Bar",
-  "Photography & Video",
-  "Flowers & Decor",
-  "Music & Entertainment",
-  "Wedding Attire",
-  "Hair & Makeup",
-  "Stationery & Invitations",
-  "Cake & Desserts",
-  "Transportation",
-  "Officiant",
-  "Planner & Coordinator",
-  "Rings & Jewelry",
-  "Favors & Gifts",
-  "Honeymoon",
-  "Other",
+export interface BudgetSectionTemplate {
+  name: string;
+  items: string[];
+}
+
+export const DEFAULT_BUDGET_SECTIONS: BudgetSectionTemplate[] = [
+  {
+    name: "Venue & Rentals",
+    items: [
+      "Ceremony venue",
+      "Reception venue",
+      "Tables & chair rentals",
+      "Linens & napkins",
+      "Lighting & A/V",
+      "Dance floor",
+      "Tent or marquee",
+      "Restroom rentals",
+    ],
+  },
+  {
+    name: "Catering & Bar",
+    items: [
+      "Per-plate catering",
+      "Cocktail hour appetizers",
+      "Bar & alcohol",
+      "Bartender service",
+      "Late-night snack",
+      "Non-alcoholic beverages",
+      "Service charge & gratuity",
+    ],
+  },
+  {
+    name: "Photography & Video",
+    items: [
+      "Photographer",
+      "Videographer",
+      "Photo booth",
+      "Engagement photos",
+      "Wedding album",
+      "Prints & wall art",
+    ],
+  },
+  {
+    name: "Flowers & Decor",
+    items: [
+      "Bridal bouquet",
+      "Bridesmaids bouquets",
+      "Boutonnieres & corsages",
+      "Ceremony flowers",
+      "Reception centerpieces",
+      "Aisle decor",
+      "Cake flowers",
+      "Petals & loose florals",
+    ],
+  },
+  {
+    name: "Music & Entertainment",
+    items: [
+      "DJ or band",
+      "Ceremony musicians",
+      "Cocktail hour music",
+      "Sound system rental",
+      "MC or emcee",
+    ],
+  },
+  {
+    name: "Wedding Attire",
+    items: [
+      "Wedding dress or outfit",
+      "Alterations",
+      "Veil or headpiece",
+      "Shoes",
+      "Accessories & jewelry",
+      "Partner attire",
+      "Partner alterations",
+    ],
+  },
+  {
+    name: "Hair & Makeup",
+    items: [
+      "Bridal hair",
+      "Bridal makeup",
+      "Hair & makeup trial",
+      "Bridesmaids hair & makeup",
+      "Touch-up kit",
+    ],
+  },
+  {
+    name: "Stationery",
+    items: [
+      "Save-the-dates",
+      "Invitations & envelopes",
+      "RSVP cards",
+      "Thank-you cards",
+      "Programs",
+      "Menu cards",
+      "Place cards & escort cards",
+      "Postage",
+      "Signage",
+    ],
+  },
+  {
+    name: "Cake & Desserts",
+    items: [
+      "Wedding cake",
+      "Groom's cake",
+      "Dessert table",
+      "Cake topper",
+      "Cake cutting fee",
+    ],
+  },
+  {
+    name: "Transportation",
+    items: [
+      "Bride & groom transport",
+      "Wedding party transport",
+      "Guest shuttle",
+      "Valet parking",
+    ],
+  },
+  {
+    name: "Officiant & Legal",
+    items: ["Officiant fee", "Marriage license", "Ceremony permit"],
+  },
+  {
+    name: "Planner & Coordination",
+    items: ["Wedding planner", "Day-of coordinator"],
+  },
+  {
+    name: "Rings",
+    items: [
+      "Wedding band (partner 1)",
+      "Wedding band (partner 2)",
+      "Ring box or pillow",
+    ],
+  },
+  {
+    name: "Favors & Gifts",
+    items: [
+      "Guest favors",
+      "Wedding party gifts",
+      "Parent gifts",
+      "Welcome bags",
+    ],
+  },
+  {
+    name: "Rehearsal & Events",
+    items: [
+      "Rehearsal dinner venue",
+      "Rehearsal dinner catering",
+      "Welcome party",
+      "After-party",
+      "Morning-after brunch",
+    ],
+  },
+  {
+    name: "Honeymoon",
+    items: [
+      "Flights",
+      "Hotel or resort",
+      "Activities & excursions",
+      "Travel insurance",
+      "Spending money",
+    ],
+  },
+  {
+    name: "Miscellaneous",
+    items: [
+      "Vendor tips & gratuities",
+      "Wedding insurance",
+      "Emergency fund",
+      "Guest accommodation assistance",
+    ],
+  },
 ];
 
 // ── Checklist Template ─────────────────────────────────────────────

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { writeRSVP, lookupHousehold } from "@/lib/google-sheets";
 import { SubmitPayload, SubmitResponse } from "@/lib/types";
 import { WEDDING } from "@/config/wedding";
+import { getDb } from "@/db";
+import { weddingSettings } from "@/db/schema";
 
 export async function POST(request: NextRequest): Promise<NextResponse<SubmitResponse>> {
   try {
@@ -32,8 +34,17 @@ export async function POST(request: NextRequest): Promise<NextResponse<SubmitRes
       );
     }
 
-    // Check RSVP deadline
-    const deadline = new Date(WEDDING.rsvpDeadline.iso);
+    // Check RSVP deadline — read from DB first, fall back to config
+    let deadlineIso = WEDDING.rsvpDeadline.iso;
+    try {
+      const db = getDb();
+      const [settings] = await db.select().from(weddingSettings).limit(1);
+      if (settings?.rsvpDeadline) {
+        deadlineIso = settings.rsvpDeadline + "T23:59:59Z";
+      }
+    } catch {}
+
+    const deadline = new Date(deadlineIso);
     if (new Date() > deadline) {
       return NextResponse.json(
         { success: false, error: "The RSVP deadline has passed. Please contact the couple directly." },

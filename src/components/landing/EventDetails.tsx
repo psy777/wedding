@@ -1,8 +1,26 @@
-import { WEDDING } from "@/config/wedding";
 import Flower from "@/components/ui/Flower";
 import SectionLabel from "@/components/ui/SectionLabel";
 
-export default function EventDetails() {
+interface Props {
+  ceremonyTime: string;
+  receptionTime: string;
+  venue: {
+    name: string;
+    address: string;
+    city: string;
+    state: string;
+    zip: string;
+    mapUrl: string;
+  };
+  dressCode: string;
+}
+
+export default function EventDetails({
+  ceremonyTime,
+  receptionTime,
+  venue,
+  dressCode,
+}: Props) {
   return (
     <section id="details" className="py-16 sm:py-24 px-4 sm:px-6 md:px-8 bg-linen">
       <div className="max-w-2xl mx-auto">
@@ -22,7 +40,7 @@ export default function EventDetails() {
           <div className="grid grid-cols-[80px_1px_1fr] sm:grid-cols-[160px_1px_1fr] gap-4 sm:gap-8 items-start">
             <div className="text-right pt-0.5">
               <p className="text-base sm:text-lg text-clay tracking-wide font-body">
-                {WEDDING.time.ceremony}
+                {ceremonyTime}
               </p>
             </div>
             <div className="relative flex flex-col items-center">
@@ -40,7 +58,7 @@ export default function EventDetails() {
           <div className="grid grid-cols-[80px_1px_1fr] sm:grid-cols-[160px_1px_1fr] gap-4 sm:gap-8 items-start">
             <div className="text-right pt-0.5">
               <p className="text-base sm:text-lg text-clay tracking-wide font-body">
-                {WEDDING.time.reception}
+                {receptionTime}
               </p>
             </div>
             <div className="relative flex flex-col items-center">
@@ -60,15 +78,15 @@ export default function EventDetails() {
             Venue
           </SectionLabel>
           <h3 className="font-heading text-xl sm:text-2xl text-ink font-light mb-2">
-            {WEDDING.venue.name}
+            {venue.name}
           </h3>
           <p className="text-base sm:text-xl text-clay leading-relaxed font-body">
-            {WEDDING.venue.address}
+            {venue.address}
             <br />
-            {WEDDING.venue.city}, {WEDDING.venue.state} {WEDDING.venue.zip}
+            {venue.city}, {venue.state} {venue.zip}
           </p>
           <a
-            href={WEDDING.venue.mapUrl}
+            href={venue.mapUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-block mt-4 text-base sm:text-lg text-ink underline underline-offset-4 decoration-sand hover:decoration-ink transition-colors duration-300 font-body"
@@ -83,7 +101,7 @@ export default function EventDetails() {
             Dress Code
           </SectionLabel>
           <p className="font-heading text-xl sm:text-2xl text-ink font-light">
-            {WEDDING.dressCode}
+            {dressCode}
           </p>
         </div>
       </div>

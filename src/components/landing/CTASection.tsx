@@ -1,9 +1,14 @@
-import Link from "next/link";
-import { WEDDING } from "@/config/wedding";
-import Flower from "@/components/ui/Flower";
-import { buttonVariants } from "@/components/ui/Button";
+"use client";
 
-export default function CTASection() {
+import Link from "next/link";
+import Flower from "@/components/ui/Flower";
+import { buttonVariants } from "@/components/ui/button";
+
+interface Props {
+  rsvpDeadlineDisplay: string;
+}
+
+export default function CTASection({ rsvpDeadlineDisplay }: Props) {
   return (
     <section className="py-16 sm:py-24 px-4 sm:px-6 bg-linen text-center overflow-hidden">
       <div className="max-w-xl mx-auto relative">
@@ -25,13 +30,15 @@ export default function CTASection() {
         </p>
         <Link
           href="/rsvp"
-          className={buttonVariants({ variant: "primary", size: "lg", className: "uppercase tracking-[0.1em]" })}
+          className={buttonVariants({ variant: "default", size: "lg", className: "uppercase tracking-[0.1em]" })}
         >
           Respond
         </Link>
-        <p className="text-base sm:text-lg text-clay mt-5 sm:mt-6 tracking-wide font-body">
-          Please respond by {WEDDING.rsvpDeadline.display}
-        </p>
+        {rsvpDeadlineDisplay && (
+          <p className="text-base sm:text-lg text-clay mt-5 sm:mt-6 tracking-wide font-body">
+            Please respond by {rsvpDeadlineDisplay}
+          </p>
+        )}
       </div>
     </section>
   );

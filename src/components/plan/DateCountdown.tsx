@@ -3,6 +3,10 @@
 import { useState, useTransition } from "react";
 import { updateWeddingDate } from "@/actions/settings";
 import { formatDate } from "@/lib/planning-data";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { CalendarHeart } from "lucide-react";
 
 export default function DateCountdown({
   weddingDate: initialDate,
@@ -25,41 +29,45 @@ export default function DateCountdown({
   };
 
   return (
-    <div className="bg-white rounded-lg border border-stone-200 p-5 mb-8">
-      <div className="flex flex-wrap items-center gap-6">
-        <div>
-          <label className="block text-xs text-stone-400 mb-1">
+    <Card className="mb-8">
+      <CardContent className="flex flex-wrap items-center gap-6 py-5">
+        <div className="space-y-1.5">
+          <Label htmlFor="wedding-date" className="text-muted-foreground">
             Wedding Date
-          </label>
-          <input
+          </Label>
+          <Input
+            id="wedding-date"
             type="date"
             value={weddingDate}
             onChange={(e) => handleDateChange(e.target.value)}
-            className="px-3 py-2 border border-stone-200 rounded-md text-sm font-medium text-stone-800 focus:outline-none focus:ring-2 focus:ring-stone-300"
             disabled={isPending}
+            className="w-auto"
           />
         </div>
         <div className="flex-1 text-right">
           {daysUntil > 0 ? (
-            <div>
-              <p className="text-3xl sm:text-4xl font-heading text-stone-800">
-                {daysUntil}
-              </p>
-              <p className="text-sm text-stone-500">
-                days until {formatDate(wedding)}
-              </p>
+            <div className="flex items-center justify-end gap-3">
+              <div>
+                <p className="text-4xl font-heading text-foreground tabular-nums">
+                  {daysUntil}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  days until {formatDate(wedding)}
+                </p>
+              </div>
+              <CalendarHeart className="h-8 w-8 text-primary hidden sm:block" />
             </div>
           ) : daysUntil === 0 ? (
-            <p className="text-2xl font-heading text-rose-500">
+            <p className="text-2xl font-heading text-primary">
               Today&apos;s the day!
             </p>
           ) : (
-            <p className="text-xl font-heading text-stone-500">
+            <p className="text-xl font-heading text-muted-foreground">
               Congratulations! You&apos;re married!
             </p>
           )}
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { WEDDING } from "@/config/wedding";
 import Flower from "@/components/ui/Flower";
 
 interface PlantedFlower {
@@ -27,7 +26,23 @@ function randomGaussian() {
   return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(TWO_PI * v);
 }
 
-export default function Hero() {
+interface Props {
+  partner1: string;
+  partner2: string;
+  dateFull: string;
+  venueName: string;
+  venueCity: string;
+  venueState: string;
+}
+
+export default function Hero({
+  partner1,
+  partner2,
+  dateFull,
+  venueName,
+  venueCity,
+  venueState,
+}: Props) {
   const [flowers, setFlowers] = useState<PlantedFlower[]>([]);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sectionRef = useRef<HTMLDivElement>(null);
@@ -196,20 +211,20 @@ export default function Hero() {
             className="hidden md:block"
             style={{ fontSize: "clamp(4rem, 8vw, 9rem)" }}
           >
-            {WEDDING.couple.partner1}
+            {partner1}
             <span className="text-white/90 italic mx-3 lg:mx-4" style={{ fontSize: "0.45em" }}>
               &amp;
             </span>
-            {WEDDING.couple.partner2}
+            {partner2}
           </span>
           <span className="md:hidden block" style={{ fontSize: "clamp(5rem, 20vw, 7.5rem)" }}>
             <span className="block">
-              {WEDDING.couple.partner1}
+              {partner1}
               <span className="text-white/90 italic ml-2" style={{ fontSize: "0.55em" }}>
                 &amp;
               </span>
             </span>
-            <span className="block">{WEDDING.couple.partner2}</span>
+            <span className="block">{partner2}</span>
           </span>
         </h1>
       </div>
@@ -218,11 +233,11 @@ export default function Hero() {
       <div className="relative z-20 mb-0 animate-fade-in-up pointer-events-none flex flex-col items-center">
         <div className="bg-parchment border border-sand/60 px-5 sm:px-10 md:px-12 py-3 sm:py-5 md:py-6 text-center shadow-md">
           <p className="text-base sm:text-lg md:text-2xl text-ink/80 tracking-wide font-body">
-            {WEDDING.date.full}
+            {dateFull}
           </p>
           <p className="text-sm sm:text-base md:text-xl text-clay mt-1 sm:mt-2 tracking-wide font-body">
-            {WEDDING.venue.name} &middot; {WEDDING.venue.city},{" "}
-            {WEDDING.venue.state}
+            {venueName} &middot; {venueCity},{" "}
+            {venueState}
           </p>
 
           <div className="flex items-center justify-center gap-2 mt-3 sm:mt-4 md:mt-5">

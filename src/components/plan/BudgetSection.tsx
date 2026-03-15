@@ -1,8 +1,11 @@
 "use client";
 
-import { useState, useTransition, useRef } from "react";
+import { useState, useTransition, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
+  addBudgetCategory,
+  updateBudgetCategory,
+  removeBudgetCategory,
   addBudgetItem,
   updateBudgetItem,
   removeBudgetItem,
@@ -10,7 +13,44 @@ import {
   deleteAttachment,
 } from "@/actions/budget";
 import { updateTotalBudget } from "@/actions/settings";
-import { BUDGET_CATEGORIES } from "@/lib/planning-data";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Progress } from "@/components/ui/progress";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  Paperclip,
+  X,
+  Upload,
+  FileText,
+  FileImage,
+  File as FileIcon,
+  Loader2,
+  ChevronRight,
+  FolderPlus,
+} from "lucide-react";
+
+// ── Types ─────────────────────────────────────────────────────────
 
 interface Attachment {
   id: number;
@@ -22,7 +62,7 @@ interface Attachment {
 
 interface BudgetItemData {
   id: number;
-  category: string;
+  categoryId: number;
   name: string;
   estimated: number;
   actual: number;
@@ -31,32 +71,73 @@ interface BudgetItemData {
   attachments: Attachment[];
 }
 
-interface Props {
-  totalBudget: number;
+interface BudgetCategoryData {
+  id: number;
+  name: string;
+  budgetAmount: number;
+  sortOrder: number;
   items: BudgetItemData[];
 }
 
+interface Props {
+  totalBudget: number;
+  categories: BudgetCategoryData[];
+}
+
+// ── Component ─────────────────────────────────────────────────────
+
 export default function BudgetSection({
   totalBudget: initialBudget,
-  items: initialItems,
+  categories: initialCategories,
 }: Props) {
-  const [items, setItems] = useState(initialItems);
+  const [categories, setCategories] = useState(initialCategories);
   const [totalBudget, setTotalBudget] = useState(initialBudget);
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [form, setForm] = useState({
-    category: BUDGET_CATEGORIES[0],
+  const [collapsed, setCollapsed] = useState<Set<number>>(new Set());
+  const [isPending, startTransition] = useTransition();
+  const router = useRouter();
+
+  // Expense dialog state
+  const [expenseDialogOpen, setExpenseDialogOpen] = useState(false);
+  const [editingExpenseId, setEditingExpenseId] = useState<number | null>(null);
+  const [activeCategoryId, setActiveCategoryId] = useState<number | null>(null);
+  const [expenseForm, setExpenseForm] = useState({
     name: "",
     estimated: "",
     actual: "",
   });
-  const [isPending, startTransition] = useTransition();
-  const fileInputRefs = useRef<Map<number, HTMLInputElement>>(new Map());
-  const router = useRouter();
 
-  const totalEstimated = items.reduce((s, i) => s + i.estimated, 0);
-  const totalActual = items.reduce((s, i) => s + i.actual, 0);
-  const totalPaid = items.filter((i) => i.paid).reduce((s, i) => s + i.actual, 0);
+  // Section dialog state
+  const [sectionDialogOpen, setSectionDialogOpen] = useState(false);
+  const [editingSectionId, setEditingSectionId] = useState<number | null>(null);
+  const [sectionForm, setSectionForm] = useState({
+    name: "",
+    budgetAmount: "",
+  });
+
+  // Attachment state
+  const fileInputRefs = useRef<Map<number, HTMLInputElement>>(new Map());
+  const [uploading, setUploading] = useState<Record<number, number>>({});
+  const [dragOver, setDragOver] = useState<number | null>(null);
+
+  // ── Computed Values ───────────────────────────────────────────────
+
+  const totalEstimated = categories.reduce(
+    (s, c) => s + c.items.reduce((s2, i) => s2 + i.estimated, 0),
+    0
+  );
+  const totalActual = categories.reduce(
+    (s, c) => s + c.items.reduce((s2, i) => s2 + i.actual, 0),
+    0
+  );
+  const totalPaid = categories.reduce(
+    (s, c) =>
+      s + c.items.filter((i) => i.paid).reduce((s2, i) => s2 + i.actual, 0),
+    0
+  );
+  const totalAllocated = categories.reduce(
+    (s, c) => s + c.budgetAmount,
+    0
+  );
 
   const fmt = (n: number) =>
     n.toLocaleString("en-US", {
@@ -65,68 +146,7 @@ export default function BudgetSection({
       minimumFractionDigits: 0,
     });
 
-  const grouped = BUDGET_CATEGORIES.map((cat) => ({
-    category: cat,
-    items: items.filter((i) => i.category === cat),
-  })).filter((g) => g.items.length > 0);
-
-  const resetForm = () => {
-    setForm({ category: BUDGET_CATEGORIES[0], name: "", estimated: "", actual: "" });
-    setShowAddForm(false);
-    setEditingId(null);
-  };
-
-  const handleSave = () => {
-    if (!form.name.trim()) return;
-    const data = {
-      category: form.category,
-      name: form.name.trim(),
-      estimated: parseFloat(form.estimated) || 0,
-      actual: parseFloat(form.actual) || 0,
-    };
-
-    if (editingId) {
-      setItems((prev) =>
-        prev.map((i) => (i.id === editingId ? { ...i, ...data } : i))
-      );
-      startTransition(async () => {
-        await updateBudgetItem(editingId, data);
-      });
-    } else {
-      startTransition(async () => {
-        await addBudgetItem(data);
-        router.refresh();
-      });
-    }
-    resetForm();
-  };
-
-  const handleEdit = (item: BudgetItemData) => {
-    setForm({
-      category: item.category,
-      name: item.name,
-      estimated: item.estimated.toString(),
-      actual: item.actual.toString(),
-    });
-    setEditingId(item.id);
-    setShowAddForm(true);
-  };
-
-  const handleRemove = (id: number) => {
-    setItems((prev) => prev.filter((i) => i.id !== id));
-    startTransition(() => {
-      removeBudgetItem(id);
-    });
-  };
-
-  const handleTogglePaid = (id: number, paid: boolean) => {
-    setItems((prev) =>
-      prev.map((i) => (i.id === id ? { ...i, paid } : i))
-    );
-    startTransition(() => {
-      toggleBudgetItemPaid(id, paid);
-    });
-  };
+  // ── Budget Handlers ───────────────────────────────────────────────
 
   const handleBudgetChange = (amount: number) => {
     setTotalBudget(amount);
@@ -135,401 +155,764 @@ export default function BudgetSection({
     });
   };
 
+  // ── Section Handlers ──────────────────────────────────────────────
+
+  const toggleCollapse = (id: number) => {
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const openAddSection = () => {
+    setSectionForm({ name: "", budgetAmount: "" });
+    setEditingSectionId(null);
+    setSectionDialogOpen(true);
+  };
+
+  const openEditSection = (cat: BudgetCategoryData) => {
+    setSectionForm({
+      name: cat.name,
+      budgetAmount: cat.budgetAmount > 0 ? cat.budgetAmount.toString() : "",
+    });
+    setEditingSectionId(cat.id);
+    setSectionDialogOpen(true);
+  };
+
+  const handleSaveSection = () => {
+    const name = sectionForm.name.trim();
+    if (!name) return;
+    const budgetAmount = parseFloat(sectionForm.budgetAmount) || 0;
+
+    if (editingSectionId) {
+      setCategories((prev) =>
+        prev.map((c) =>
+          c.id === editingSectionId ? { ...c, name, budgetAmount } : c
+        )
+      );
+      startTransition(async () => {
+        await updateBudgetCategory(editingSectionId, { name, budgetAmount });
+      });
+    } else {
+      startTransition(async () => {
+        const cat = await addBudgetCategory({ name, budgetAmount });
+        router.refresh();
+      });
+    }
+    setSectionDialogOpen(false);
+    setEditingSectionId(null);
+  };
+
+  const handleRemoveSection = (id: number) => {
+    setCategories((prev) => prev.filter((c) => c.id !== id));
+    startTransition(() => {
+      removeBudgetCategory(id);
+    });
+  };
+
+  // ── Expense Handlers ──────────────────────────────────────────────
+
+  const openAddExpense = (categoryId: number) => {
+    setExpenseForm({ name: "", estimated: "", actual: "" });
+    setEditingExpenseId(null);
+    setActiveCategoryId(categoryId);
+    setExpenseDialogOpen(true);
+  };
+
+  const openEditExpense = (item: BudgetItemData) => {
+    setExpenseForm({
+      name: item.name,
+      estimated: item.estimated > 0 ? item.estimated.toString() : "",
+      actual: item.actual > 0 ? item.actual.toString() : "",
+    });
+    setEditingExpenseId(item.id);
+    setActiveCategoryId(item.categoryId);
+    setExpenseDialogOpen(true);
+  };
+
+  const handleSaveExpense = () => {
+    if (!expenseForm.name.trim() || !activeCategoryId) return;
+    const data = {
+      name: expenseForm.name.trim(),
+      estimated: parseFloat(expenseForm.estimated) || 0,
+      actual: parseFloat(expenseForm.actual) || 0,
+    };
+
+    if (editingExpenseId) {
+      setCategories((prev) =>
+        prev.map((c) => ({
+          ...c,
+          items: c.items.map((i) =>
+            i.id === editingExpenseId ? { ...i, ...data } : i
+          ),
+        }))
+      );
+      startTransition(async () => {
+        await updateBudgetItem(editingExpenseId, data);
+      });
+    } else {
+      startTransition(async () => {
+        await addBudgetItem({ categoryId: activeCategoryId!, ...data });
+        router.refresh();
+      });
+    }
+    setExpenseDialogOpen(false);
+    setEditingExpenseId(null);
+    setActiveCategoryId(null);
+  };
+
+  const handleRemoveExpense = (id: number) => {
+    setCategories((prev) =>
+      prev.map((c) => ({
+        ...c,
+        items: c.items.filter((i) => i.id !== id),
+      }))
+    );
+    startTransition(() => {
+      removeBudgetItem(id);
+    });
+  };
+
+  const handleTogglePaid = (id: number, paid: boolean) => {
+    setCategories((prev) =>
+      prev.map((c) => ({
+        ...c,
+        items: c.items.map((i) => (i.id === id ? { ...i, paid } : i)),
+      }))
+    );
+    startTransition(() => {
+      toggleBudgetItemPaid(id, paid);
+    });
+  };
+
+  // ── Attachment Handlers ───────────────────────────────────────────
+
   const handleUpload = async (budgetItemId: number, file: File) => {
+    setUploading((prev) => ({ ...prev, [budgetItemId]: 0 }));
+
     const formData = new FormData();
     formData.append("file", file);
     formData.append("budgetItemId", budgetItemId.toString());
 
-    const res = await fetch("/api/plan/upload", {
-      method: "POST",
-      body: formData,
-    });
+    try {
+      const xhr = new XMLHttpRequest();
+      xhr.upload.addEventListener("progress", (e) => {
+        if (e.lengthComputable) {
+          const pct = Math.round((e.loaded / e.total) * 100);
+          setUploading((prev) => ({ ...prev, [budgetItemId]: pct }));
+        }
+      });
 
-    if (res.ok) {
-      const { attachment } = await res.json();
-      setItems((prev) =>
-        prev.map((i) =>
-          i.id === budgetItemId
-            ? { ...i, attachments: [...i.attachments, attachment] }
-            : i
-        )
+      const result = await new Promise<{ attachment: Attachment }>(
+        (resolve, reject) => {
+          xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              resolve(JSON.parse(xhr.responseText));
+            } else {
+              reject(new Error("Upload failed"));
+            }
+          };
+          xhr.onerror = () => reject(new Error("Upload failed"));
+          xhr.open("POST", "/api/plan/upload");
+          xhr.send(formData);
+        }
       );
+
+      setCategories((prev) =>
+        prev.map((c) => ({
+          ...c,
+          items: c.items.map((i) =>
+            i.id === budgetItemId
+              ? { ...i, attachments: [...i.attachments, result.attachment] }
+              : i
+          ),
+        }))
+      );
+    } catch {
+      // silently fail
+    } finally {
+      setUploading((prev) => {
+        const next = { ...prev };
+        delete next[budgetItemId];
+        return next;
+      });
     }
   };
 
-  const handleDeleteAttachment = (attId: number, fileUrl: string, budgetItemId: number) => {
-    setItems((prev) =>
-      prev.map((i) =>
-        i.id === budgetItemId
-          ? { ...i, attachments: i.attachments.filter((a) => a.id !== attId) }
-          : i
-      )
+  const handleDrop = useCallback(
+    (budgetItemId: number, e: React.DragEvent) => {
+      e.preventDefault();
+      setDragOver(null);
+      const file = e.dataTransfer.files?.[0];
+      if (file) handleUpload(budgetItemId, file);
+    },
+    []
+  );
+
+  const getFileIcon = (contentType: string | null) => {
+    if (!contentType) return FileIcon;
+    if (contentType.startsWith("image/")) return FileImage;
+    if (contentType.includes("pdf")) return FileText;
+    return FileIcon;
+  };
+
+  const handleDeleteAttachment = (
+    attId: number,
+    fileUrl: string,
+    budgetItemId: number
+  ) => {
+    setCategories((prev) =>
+      prev.map((c) => ({
+        ...c,
+        items: c.items.map((i) =>
+          i.id === budgetItemId
+            ? {
+                ...i,
+                attachments: i.attachments.filter((a) => a.id !== attId),
+              }
+            : i
+        ),
+      }))
     );
     startTransition(() => {
       deleteAttachment(attId, fileUrl);
     });
   };
 
+  // ── Render ────────────────────────────────────────────────────────
+
   return (
     <div className="space-y-6">
-      {/* Budget Header */}
-      <div className="bg-white rounded-lg border border-stone-200 p-5">
-        <div className="flex flex-wrap items-end gap-4">
-          <div className="flex-1 min-w-[200px]">
-            <label className="block text-xs text-stone-500 mb-1">
-              Total Budget
-            </label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400">
-                $
-              </span>
-              <input
-                type="number"
-                value={totalBudget || ""}
-                onChange={(e) =>
-                  handleBudgetChange(parseFloat(e.target.value) || 0)
-                }
-                placeholder="0"
-                className="w-full pl-7 pr-3 py-2 border border-stone-200 rounded-md text-lg font-semibold focus:outline-none focus:ring-2 focus:ring-stone-300"
+      {/* Budget Summary */}
+      <Card>
+        <CardContent className="pt-5">
+          <div className="flex flex-wrap items-end gap-6">
+            <div className="space-y-1.5 min-w-[200px]">
+              <Label htmlFor="total-budget">Total Budget</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                  $
+                </span>
+                <Input
+                  id="total-budget"
+                  type="number"
+                  value={totalBudget || ""}
+                  onChange={(e) =>
+                    handleBudgetChange(parseFloat(e.target.value) || 0)
+                  }
+                  placeholder="0"
+                  className="pl-7 text-lg font-semibold"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 flex-1 min-w-[300px]">
+              <div>
+                <p className="text-xs text-muted-foreground">Allocated</p>
+                <p className="text-lg font-semibold">{fmt(totalAllocated)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Estimated</p>
+                <p className="text-lg font-semibold">{fmt(totalEstimated)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Actual</p>
+                <p className="text-lg font-semibold">{fmt(totalActual)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Paid</p>
+                <p className="text-lg font-semibold text-chart-2">
+                  {fmt(totalPaid)}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {totalBudget > 0 && (
+            <div className="mt-4">
+              <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                <span>
+                  {Math.round((totalActual / totalBudget) * 100)}% spent
+                </span>
+                <span>{fmt(totalBudget - totalActual)} remaining</span>
+              </div>
+              <Progress
+                value={Math.min(100, (totalActual / totalBudget) * 100)}
+                className="h-2"
               />
             </div>
-          </div>
-          <div className="grid grid-cols-3 gap-4 flex-1 min-w-[300px]">
-            <div>
-              <p className="text-xs text-stone-400">Estimated</p>
-              <p className="text-lg font-semibold text-stone-700">
-                {fmt(totalEstimated)}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-stone-400">Actual</p>
-              <p className="text-lg font-semibold text-stone-800">
-                {fmt(totalActual)}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-stone-400">Paid</p>
-              <p className="text-lg font-semibold text-green-600">
-                {fmt(totalPaid)}
-              </p>
-            </div>
-          </div>
-        </div>
+          )}
+        </CardContent>
+      </Card>
 
-        {totalBudget > 0 && (
-          <div className="mt-4">
-            <div className="flex justify-between text-xs text-stone-400 mb-1">
-              <span>
-                {Math.round((totalActual / totalBudget) * 100)}% spent
-              </span>
-              <span>{fmt(totalBudget - totalActual)} remaining</span>
-            </div>
-            <div className="w-full bg-stone-100 rounded-full h-2">
-              <div
-                className={`h-2 rounded-full transition-all ${
-                  totalActual > totalBudget ? "bg-red-600" : "bg-rose-400"
-                }`}
-                style={{
-                  width: `${Math.min(100, (totalActual / totalBudget) * 100)}%`,
-                }}
-              />
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Add / Edit Form */}
+      {/* Actions */}
       <div className="flex justify-end">
-        <button
-          onClick={() => {
-            if (showAddForm) resetForm();
-            else setShowAddForm(true);
-          }}
-          className="text-sm px-3 py-1.5 bg-stone-800 text-white rounded-md hover:bg-stone-900 transition-colors"
-        >
-          {showAddForm ? "Cancel" : "Add Expense"}
-        </button>
+        <Button variant="outline" size="sm" onClick={openAddSection}>
+          <FolderPlus className="h-4 w-4 mr-1" />
+          Add Section
+        </Button>
       </div>
 
-      {showAddForm && (
-        <div className="bg-white rounded-lg border border-stone-200 p-4 space-y-3">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <select
-              value={form.category}
-              onChange={(e) => setForm({ ...form, category: e.target.value })}
-              className="px-3 py-2 border border-stone-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-stone-300"
-            >
-              {BUDGET_CATEGORIES.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat}
-                </option>
-              ))}
-            </select>
-            <input
-              type="text"
-              placeholder="Item name"
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-              className="px-3 py-2 border border-stone-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-stone-300"
-              onKeyDown={(e) => e.key === "Enter" && handleSave()}
-            />
-          </div>
-          <div className="flex flex-wrap gap-3">
-            <div className="flex-1 min-w-[120px]">
-              <label className="block text-xs text-stone-500 mb-1">
-                Estimated
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 text-sm">
-                  $
-                </span>
-                <input
-                  type="number"
-                  value={form.estimated}
-                  onChange={(e) =>
-                    setForm({ ...form, estimated: e.target.value })
-                  }
-                  placeholder="0"
-                  className="w-full pl-7 pr-3 py-2 border border-stone-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-stone-300"
-                />
-              </div>
-            </div>
-            <div className="flex-1 min-w-[120px]">
-              <label className="block text-xs text-stone-500 mb-1">
-                Actual
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 text-sm">
-                  $
-                </span>
-                <input
-                  type="number"
-                  value={form.actual}
-                  onChange={(e) =>
-                    setForm({ ...form, actual: e.target.value })
-                  }
-                  placeholder="0"
-                  className="w-full pl-7 pr-3 py-2 border border-stone-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-stone-300"
-                />
-              </div>
-            </div>
-            <button
-              onClick={handleSave}
-              disabled={isPending}
-              className="self-end px-4 py-2 bg-rose-500 text-white text-sm rounded-md hover:bg-rose-600 transition-colors disabled:opacity-50"
-            >
-              {editingId ? "Update" : "Add"}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Expense Table by Category */}
-      {grouped.length === 0 ? (
-        <div className="bg-white rounded-lg border border-stone-200 p-8 text-center">
-          <p className="text-stone-400 text-sm">
-            No expenses yet. Add your first expense above.
-          </p>
-        </div>
+      {/* Category Sections */}
+      {categories.length === 0 ? (
+        <Card>
+          <CardContent className="py-8 text-center">
+            <p className="text-muted-foreground text-sm">
+              No budget sections yet. Add your first section above.
+            </p>
+          </CardContent>
+        </Card>
       ) : (
-        grouped.map(({ category, items: catItems }) => {
-          const catEstimated = catItems.reduce((s, i) => s + i.estimated, 0);
-          const catActual = catItems.reduce((s, i) => s + i.actual, 0);
-          return (
-            <div
-              key={category}
-              className="bg-white rounded-lg border border-stone-200 overflow-hidden"
-            >
-              <div className="px-4 py-3 bg-stone-50 border-b border-stone-100 flex items-center justify-between">
-                <span className="font-heading text-sm text-stone-700">
-                  {category}
-                </span>
-                <span className="text-xs text-stone-400">
-                  Est: {fmt(catEstimated)} | Actual: {fmt(catActual)}
-                </span>
-              </div>
-              <div className="divide-y divide-stone-50">
-                {catItems.map((item) => (
-                  <div key={item.id} className="px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="checkbox"
-                        checked={item.paid}
-                        onChange={() =>
-                          handleTogglePaid(item.id, !item.paid)
-                        }
-                        className="rounded border-stone-300"
-                        title="Mark as paid"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <span
-                          className={`text-sm ${
-                            item.paid
-                              ? "text-stone-400 line-through"
-                              : "text-stone-700"
-                          }`}
-                        >
-                          {item.name}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-4 text-sm shrink-0">
-                        <div className="text-right">
-                          <p className="text-stone-400 text-xs">Est</p>
-                          <p className="text-stone-600">
-                            {fmt(item.estimated)}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-stone-400 text-xs">Actual</p>
-                          <p className="font-medium text-stone-800">
-                            {fmt(item.actual)}
-                          </p>
-                        </div>
-                        {/* Upload button */}
-                        <button
-                          onClick={() => {
-                            const input = fileInputRefs.current.get(item.id);
-                            input?.click();
-                          }}
-                          className="text-stone-300 hover:text-stone-500 transition-colors"
-                          title="Attach file"
-                        >
-                          <svg
-                            className="w-4 h-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
-                            />
-                          </svg>
-                        </button>
-                        <input
-                          type="file"
-                          ref={(el) => {
-                            if (el) fileInputRefs.current.set(item.id, el);
-                          }}
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) handleUpload(item.id, file);
-                            e.target.value = "";
-                          }}
-                          className="hidden"
-                        />
-                        <button
-                          onClick={() => handleEdit(item)}
-                          className="text-stone-300 hover:text-stone-500 transition-colors"
-                          title="Edit"
-                        >
-                          <svg
-                            className="w-4 h-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                            />
-                          </svg>
-                        </button>
-                        <button
-                          onClick={() => handleRemove(item.id)}
-                          className="text-stone-300 hover:text-red-500 transition-colors"
-                          title="Delete"
-                        >
-                          <svg
-                            className="w-4 h-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                            />
-                          </svg>
-                        </button>
-                      </div>
-                    </div>
+        categories.map((cat) => {
+          const isCollapsed = collapsed.has(cat.id);
+          const catEstimated = cat.items.reduce(
+            (s, i) => s + i.estimated,
+            0
+          );
+          const catActual = cat.items.reduce((s, i) => s + i.actual, 0);
+          const catBasis = cat.budgetAmount > 0 ? cat.budgetAmount : catEstimated;
 
-                    {/* Attachments */}
-                    {item.attachments.length > 0 && (
-                      <div className="mt-2 ml-7 space-y-1">
-                        {item.attachments.map((att) => (
-                          <div
-                            key={att.id}
-                            className="flex items-center gap-2 text-xs"
-                          >
-                            <svg
-                              className="w-3.5 h-3.5 text-stone-400"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
-                              />
-                            </svg>
-                            <a
-                              href={att.fileUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-rose-500 hover:underline truncate max-w-[200px]"
-                            >
-                              {att.fileName}
-                            </a>
-                            {att.fileSize && (
-                              <span className="text-stone-400">
-                                ({(att.fileSize / 1024).toFixed(0)} KB)
-                              </span>
-                            )}
-                            <button
-                              onClick={() =>
-                                handleDeleteAttachment(
-                                  att.id,
-                                  att.fileUrl,
-                                  item.id
-                                )
-                              }
-                              className="text-stone-300 hover:text-red-500"
-                            >
-                              <svg
-                                className="w-3 h-3"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M6 18L18 6M6 6l12 12"
-                                />
-                              </svg>
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+          return (
+            <Card key={cat.id} className="overflow-hidden">
+              {/* Section Header */}
+              <CardHeader
+                className="py-3 bg-muted/50 cursor-pointer select-none"
+                onClick={() => toggleCollapse(cat.id)}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <ChevronRight
+                      className={`h-4 w-4 shrink-0 transition-transform duration-200 ${
+                        !isCollapsed ? "rotate-90" : ""
+                      }`}
+                    />
+                    <CardTitle className="text-sm font-heading truncate">
+                      {cat.name}
+                    </CardTitle>
+                    <span className="text-xs text-muted-foreground whitespace-nowrap">
+                      ({cat.items.length} item{cat.items.length !== 1 ? "s" : ""})
+                    </span>
                   </div>
-                ))}
-              </div>
-            </div>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <div className="text-right hidden sm:block">
+                      <span className="text-xs text-muted-foreground">
+                        {fmt(catActual)}
+                        {catBasis > 0 && ` / ${fmt(catBasis)}`}
+                      </span>
+                    </div>
+                    <div
+                      className="flex items-center gap-0.5"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() => openEditSection(cat)}
+                        title="Edit section"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                        onClick={() => handleRemoveSection(cat.id)}
+                        title="Delete section"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Per-section progress bar */}
+                {catBasis > 0 && (
+                  <Progress
+                    value={Math.min(100, (catActual / catBasis) * 100)}
+                    className="h-1.5 mt-2"
+                  />
+                )}
+              </CardHeader>
+
+              {/* Section Content */}
+              {!isCollapsed && (
+                <CardContent className="p-0">
+                  {cat.items.length === 0 ? (
+                    <div className="p-4 text-center text-sm text-muted-foreground">
+                      No expenses in this section yet.
+                    </div>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-10">Paid</TableHead>
+                          <TableHead>Item</TableHead>
+                          <TableHead className="text-right">
+                            Estimated
+                          </TableHead>
+                          <TableHead className="text-right">Actual</TableHead>
+                          <TableHead className="w-24 text-right">
+                            Actions
+                          </TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {cat.items.map((item) => (
+                          <TableRow key={item.id} className="group">
+                            <TableCell>
+                              <Checkbox
+                                checked={item.paid}
+                                onCheckedChange={() =>
+                                  handleTogglePaid(item.id, !item.paid)
+                                }
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <span
+                                className={
+                                  item.paid
+                                    ? "text-muted-foreground line-through"
+                                    : ""
+                                }
+                              >
+                                {item.name}
+                              </span>
+                              {/* Attachments */}
+                              {item.attachments.length > 0 && (
+                                <div className="mt-1.5 space-y-1">
+                                  {item.attachments.map((att) => {
+                                    const Icon = getFileIcon(att.contentType);
+                                    const isImage =
+                                      att.contentType?.startsWith("image/");
+                                    return (
+                                      <div
+                                        key={att.id}
+                                        className="flex items-center gap-2 text-xs"
+                                      >
+                                        {isImage ? (
+                                          <img
+                                            src={att.fileUrl}
+                                            alt={att.fileName}
+                                            className="h-6 w-6 rounded object-cover shrink-0"
+                                          />
+                                        ) : (
+                                          <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
+                                        )}
+                                        <a
+                                          href={att.fileUrl}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="text-primary hover:underline truncate max-w-[200px]"
+                                        >
+                                          {att.fileName}
+                                        </a>
+                                        {att.fileSize && (
+                                          <span className="text-muted-foreground">
+                                            (
+                                            {(att.fileSize / 1024).toFixed(0)}{" "}
+                                            KB)
+                                          </span>
+                                        )}
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-4 w-4 text-muted-foreground hover:text-destructive"
+                                          onClick={() =>
+                                            handleDeleteAttachment(
+                                              att.id,
+                                              att.fileUrl,
+                                              item.id
+                                            )
+                                          }
+                                        >
+                                          <X className="h-3 w-3" />
+                                        </Button>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                              {/* Upload progress */}
+                              {uploading[item.id] !== undefined && (
+                                <div className="mt-1.5 flex items-center gap-2 text-xs text-muted-foreground">
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                  <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+                                    <div
+                                      className="h-full bg-primary transition-all duration-200 rounded-full"
+                                      style={{
+                                        width: `${uploading[item.id]}%`,
+                                      }}
+                                    />
+                                  </div>
+                                  <span>{uploading[item.id]}%</span>
+                                </div>
+                              )}
+                              {/* Drop zone */}
+                              <div
+                                className={`mt-1.5 border border-dashed rounded-md p-2 text-center text-xs text-muted-foreground transition-colors cursor-pointer ${
+                                  dragOver === item.id
+                                    ? "border-primary bg-primary/5"
+                                    : "border-border/50 hover:border-border"
+                                } ${
+                                  item.attachments.length === 0 &&
+                                  uploading[item.id] === undefined
+                                    ? ""
+                                    : "hidden group-hover:block"
+                                }`}
+                                onDragOver={(e) => {
+                                  e.preventDefault();
+                                  setDragOver(item.id);
+                                }}
+                                onDragLeave={() => setDragOver(null)}
+                                onDrop={(e) => handleDrop(item.id, e)}
+                                onClick={() => {
+                                  const input = fileInputRefs.current.get(
+                                    item.id
+                                  );
+                                  input?.click();
+                                }}
+                              >
+                                <Upload className="h-3.5 w-3.5 inline mr-1" />
+                                Drop file or click to attach
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-right text-muted-foreground">
+                              {fmt(item.estimated)}
+                            </TableCell>
+                            <TableCell className="text-right font-medium">
+                              {fmt(item.actual)}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex items-center justify-end gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7"
+                                  onClick={() => {
+                                    const input = fileInputRefs.current.get(
+                                      item.id
+                                    );
+                                    input?.click();
+                                  }}
+                                  title="Attach file"
+                                >
+                                  <Paperclip className="h-3.5 w-3.5" />
+                                </Button>
+                                <input
+                                  type="file"
+                                  ref={(el) => {
+                                    if (el)
+                                      fileInputRefs.current.set(item.id, el);
+                                  }}
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) handleUpload(item.id, file);
+                                    e.target.value = "";
+                                  }}
+                                  className="hidden"
+                                />
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7"
+                                  onClick={() => openEditExpense(item)}
+                                  title="Edit"
+                                >
+                                  <Pencil className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                                  onClick={() => handleRemoveExpense(item.id)}
+                                  title="Delete"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+
+                  {/* Add expense button within section */}
+                  <div className="p-3 border-t border-border/50">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-muted-foreground"
+                      onClick={() => openAddExpense(cat.id)}
+                    >
+                      <Plus className="h-3.5 w-3.5 mr-1" />
+                      Add expense
+                    </Button>
+                  </div>
+                </CardContent>
+              )}
+            </Card>
           );
         })
       )}
+
+      {/* Section Dialog */}
+      <Dialog
+        open={sectionDialogOpen}
+        onOpenChange={(open) => {
+          setSectionDialogOpen(open);
+          if (!open) {
+            setEditingSectionId(null);
+            setSectionForm({ name: "", budgetAmount: "" });
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {editingSectionId ? "Edit Section" : "Add Section"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="section-name">Section Name</Label>
+              <Input
+                id="section-name"
+                placeholder="e.g. Venue & Rentals"
+                value={sectionForm.name}
+                onChange={(e) =>
+                  setSectionForm({ ...sectionForm, name: e.target.value })
+                }
+                onKeyDown={(e) => e.key === "Enter" && handleSaveSection()}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="section-budget">
+                Budget Amount{" "}
+                <span className="text-muted-foreground font-normal">
+                  (optional)
+                </span>
+              </Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+                  $
+                </span>
+                <Input
+                  id="section-budget"
+                  type="number"
+                  value={sectionForm.budgetAmount}
+                  onChange={(e) =>
+                    setSectionForm({
+                      ...sectionForm,
+                      budgetAmount: e.target.value,
+                    })
+                  }
+                  placeholder="0"
+                  className="pl-7"
+                  onKeyDown={(e) => e.key === "Enter" && handleSaveSection()}
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <DialogClose render={<Button variant="outline" />}>
+              Cancel
+            </DialogClose>
+            <Button onClick={handleSaveSection} disabled={isPending}>
+              {editingSectionId ? "Update" : "Add"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Expense Dialog */}
+      <Dialog
+        open={expenseDialogOpen}
+        onOpenChange={(open) => {
+          setExpenseDialogOpen(open);
+          if (!open) {
+            setEditingExpenseId(null);
+            setActiveCategoryId(null);
+            setExpenseForm({ name: "", estimated: "", actual: "" });
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {editingExpenseId ? "Edit Expense" : "Add Expense"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="expense-name">Item Name</Label>
+              <Input
+                id="expense-name"
+                placeholder="e.g. Venue deposit"
+                value={expenseForm.name}
+                onChange={(e) =>
+                  setExpenseForm({ ...expenseForm, name: e.target.value })
+                }
+                onKeyDown={(e) => e.key === "Enter" && handleSaveExpense()}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="expense-estimated">Estimated</Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+                    $
+                  </span>
+                  <Input
+                    id="expense-estimated"
+                    type="number"
+                    value={expenseForm.estimated}
+                    onChange={(e) =>
+                      setExpenseForm({
+                        ...expenseForm,
+                        estimated: e.target.value,
+                      })
+                    }
+                    placeholder="0"
+                    className="pl-7"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="expense-actual">Actual</Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+                    $
+                  </span>
+                  <Input
+                    id="expense-actual"
+                    type="number"
+                    value={expenseForm.actual}
+                    onChange={(e) =>
+                      setExpenseForm({
+                        ...expenseForm,
+                        actual: e.target.value,
+                      })
+                    }
+                    placeholder="0"
+                    className="pl-7"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <DialogClose render={<Button variant="outline" />}>
+              Cancel
+            </DialogClose>
+            <Button onClick={handleSaveExpense} disabled={isPending}>
+              {editingExpenseId ? "Update" : "Add"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

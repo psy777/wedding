@@ -1,48 +1,24 @@
-import * as React from "react";
-import { cn } from "@/lib/utils";
+import * as React from "react"
+import { Input as InputPrimitive } from "@base-ui/react/input"
 
-/** Shared base styles for text inputs and textareas */
-export const inputBaseStyles = [
-  "w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-sand bg-linen/60 text-ink text-base sm:text-lg",
-  "placeholder:text-clay/40 font-body",
-  "focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold/20",
-  "transition-colors duration-200",
-] as const;
+import { cn } from "@/lib/utils"
 
-export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  label?: string;
-  error?: string;
+function Input({ className, type, ...props }: React.ComponentProps<"input">) {
+  return (
+    <InputPrimitive
+      type={type}
+      data-slot="input"
+      className={cn(
+        "h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base transition-colors outline-none file:inline-flex file:h-6 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:disabled:bg-input/80 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40",
+        className
+      )}
+      {...props}
+    />
+  )
 }
 
-const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ label, error, className, id, ...props }, ref) => {
-    const inputId = id || label?.toLowerCase().replace(/\s+/g, "-");
+export const inputBaseStyles =
+  "h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 md:text-sm"
 
-    return (
-      <div className="w-full">
-        {label && (
-          <label
-            htmlFor={inputId}
-            className="block text-base sm:text-lg font-medium text-clay mb-1.5 tracking-wide font-body"
-          >
-            {label}
-          </label>
-        )}
-        <input
-          id={inputId}
-          ref={ref}
-          className={cn(
-            ...inputBaseStyles,
-            error && "border-wine focus:border-wine focus:ring-wine/20",
-            className
-          )}
-          {...props}
-        />
-        {error && <p className="mt-1.5 text-base sm:text-lg text-wine font-body">{error}</p>}
-      </div>
-    );
-  }
-);
-Input.displayName = "Input";
-
-export default Input;
+export default Input
+export { Input }

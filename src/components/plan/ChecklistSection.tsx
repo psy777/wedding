@@ -12,6 +12,39 @@ import {
   getDueDate,
   formatDate,
 } from "@/lib/planning-data";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
+import { Separator } from "@/components/ui/separator";
+import {
+  ChevronRight,
+  Plus,
+  Pencil,
+  X,
+  CalendarClock,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface ChecklistItem {
   id: number;
@@ -28,20 +61,30 @@ interface Props {
   weddingDate: string;
 }
 
-export default function ChecklistSection({ items: initialItems, weddingDate }: Props) {
+export default function ChecklistSection({
+  items: initialItems,
+  weddingDate,
+}: Props) {
   const [items, setItems] = useState(initialItems);
   const [hideCompleted, setHideCompleted] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
     () => new Set(CHECKLIST_CATEGORIES)
   );
   const [editingNotes, setEditingNotes] = useState<number | null>(null);
-  const [showAddForm, setShowAddForm] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newCategory, setNewCategory] = useState(CHECKLIST_CATEGORIES[0]);
-  const [newMonths, setNewMonths] = useState(12);
+  const [newMonths, setNewMonths] = useState("12");
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   const now = new Date();
+
+  // Upcoming deadlines (overdue + soonest incomplete)
+  const upcomingItems = items
+    .filter((i) => !i.completed)
+    .map((i) => ({ ...i, dueDate: getDueDate(weddingDate, i.monthsBefore) }))
+    .sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime())
+    .slice(0, 8);
 
   const toggleCategory = (cat: string) => {
     const next = new Set(expandedCategories);
@@ -59,7 +102,9 @@ export default function ChecklistSection({ items: initialItems, weddingDate }: P
         await toggleChecklistItem(id, completed);
       } catch {
         setItems((prev) =>
-          prev.map((i) => (i.id === id ? { ...i, completed: !completed } : i))
+          prev.map((i) =>
+            i.id === id ? { ...i, completed: !completed } : i
+          )
         );
       }
     });
@@ -83,10 +128,11 @@ export default function ChecklistSection({ items: initialItems, weddingDate }: P
       await addCustomChecklistItem({
         title: newTitle.trim(),
         category: newCategory,
-        monthsBefore: newMonths,
+        monthsBefore: parseFloat(newMonths) || 12,
       });
       setNewTitle("");
-      setShowAddForm(false);
+      setNewMonths("12");
+      setDialogOpen(false);
     });
   };
 
@@ -97,7 +143,6 @@ export default function ChecklistSection({ items: initialItems, weddingDate }: P
     });
   };
 
-  // Group items by category
   const allCategories = [
     ...new Set([
       ...CHECKLIST_CATEGORIES,
@@ -108,76 +153,135 @@ export default function ChecklistSection({ items: initialItems, weddingDate }: P
     .map((cat) => {
       const catItems = items.filter((i) => i.category === cat);
       const completed = catItems.filter((i) => i.completed).length;
-      return { category: cat, items: catItems, completed, total: catItems.length };
+      return {
+        category: cat,
+        items: catItems,
+        completed,
+        total: catItems.length,
+      };
     })
     .filter((g) => g.total > 0);
 
   return (
     <div className="space-y-4">
+      {/* Upcoming Deadlines */}
+      {upcomingItems.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <CalendarClock className="h-5 w-5 text-muted-foreground" />
+              <CardTitle className="text-lg font-heading">
+                Upcoming Deadlines
+              </CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-0">
+              {upcomingItems.map((item, idx) => {
+                const overdue = item.dueDate < now;
+                const soon =
+                  !overdue &&
+                  item.dueDate.getTime() - now.getTime() <
+                    14 * 24 * 60 * 60 * 1000;
+                return (
+                  <div key={item.id}>
+                    {idx > 0 && <Separator />}
+                    <div className="flex items-center justify-between py-2.5">
+                      <span className="text-sm truncate mr-3">
+                        {item.title}
+                      </span>
+                      <Badge
+                        variant={
+                          overdue
+                            ? "destructive"
+                            : soon
+                              ? "default"
+                              : "secondary"
+                        }
+                        className="shrink-0"
+                      >
+                        {formatDate(item.dueDate)}
+                      </Badge>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Controls */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <label className="flex items-center gap-2 text-sm text-stone-600">
-          <input
-            type="checkbox"
+        <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
+          <Checkbox
             checked={hideCompleted}
-            onChange={(e) => setHideCompleted(e.target.checked)}
-            className="rounded border-stone-300"
+            onCheckedChange={(checked) =>
+              setHideCompleted(checked === true)
+            }
           />
           Hide completed tasks
         </label>
-        <button
-          onClick={() => setShowAddForm(!showAddForm)}
-          className="text-sm px-3 py-1.5 bg-stone-800 text-white rounded-md hover:bg-stone-900 transition-colors"
-        >
-          {showAddForm ? "Cancel" : "Add Custom Task"}
-        </button>
-      </div>
 
-      {/* Add Custom Task Form */}
-      {showAddForm && (
-        <div className="bg-white rounded-lg border border-stone-200 p-4 space-y-3">
-          <input
-            type="text"
-            placeholder="Task title"
-            value={newTitle}
-            onChange={(e) => setNewTitle(e.target.value)}
-            className="w-full px-3 py-2 border border-stone-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-stone-300"
-            onKeyDown={(e) => e.key === "Enter" && handleAddCustom()}
-          />
-          <div className="flex flex-wrap gap-3">
-            <select
-              value={newCategory}
-              onChange={(e) => setNewCategory(e.target.value)}
-              className="flex-1 min-w-[180px] px-3 py-2 border border-stone-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-stone-300"
-            >
-              {CHECKLIST_CATEGORIES.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat}
-                </option>
-              ))}
-            </select>
-            <div className="flex items-center gap-2">
-              <label className="text-xs text-stone-500">Months before:</label>
-              <input
-                type="number"
-                value={newMonths}
-                onChange={(e) => setNewMonths(Number(e.target.value))}
-                min={0}
-                max={24}
-                step={0.25}
-                className="w-20 px-2 py-2 border border-stone-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-stone-300"
-              />
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogTrigger render={<Button size="sm" />}>
+            <Plus className="h-4 w-4 mr-1" />
+            Add Custom Task
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add Custom Task</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-2">
+              <div className="space-y-2">
+                <Label htmlFor="task-title">Task Title</Label>
+                <Input
+                  id="task-title"
+                  placeholder="e.g. Book venue tour"
+                  value={newTitle}
+                  onChange={(e) => setNewTitle(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleAddCustom()}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Category</Label>
+                <Select value={newCategory} onValueChange={(v) => v && setNewCategory(v)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CHECKLIST_CATEGORIES.map((cat) => (
+                      <SelectItem key={cat} value={cat}>
+                        {cat}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="months-before">Months Before Wedding</Label>
+                <Input
+                  id="months-before"
+                  type="number"
+                  value={newMonths}
+                  onChange={(e) => setNewMonths(e.target.value)}
+                  min={0}
+                  max={24}
+                  step={0.25}
+                />
+              </div>
             </div>
-            <button
-              onClick={handleAddCustom}
-              disabled={isPending}
-              className="px-4 py-2 bg-rose-500 text-white text-sm rounded-md hover:bg-rose-600 transition-colors disabled:opacity-50"
-            >
-              Add
-            </button>
-          </div>
-        </div>
-      )}
+            <DialogFooter>
+              <DialogClose render={<Button variant="outline" />}>
+                Cancel
+              </DialogClose>
+              <Button onClick={handleAddCustom} disabled={isPending}>
+                Add Task
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
 
       {/* Category Groups */}
       {grouped.map(({ category, items: catItems, completed, total }) => {
@@ -185,176 +289,148 @@ export default function ChecklistSection({ items: initialItems, weddingDate }: P
         const filteredItems = hideCompleted
           ? catItems.filter((i) => !i.completed)
           : catItems;
+        const progressPct = total > 0 ? (completed / total) * 100 : 0;
 
         return (
-          <div
-            key={category}
-            className="bg-white rounded-lg border border-stone-200 overflow-hidden"
-          >
+          <Card key={category} className="overflow-hidden">
             <button
               onClick={() => toggleCategory(category)}
-              className="w-full flex items-center justify-between px-4 py-3 hover:bg-stone-50 transition-colors"
+              className="w-full flex items-center justify-between px-4 py-3 hover:bg-accent/50 transition-colors"
             >
               <div className="flex items-center gap-3">
-                <svg
-                  className={`w-4 h-4 text-stone-400 transition-transform ${
-                    expanded ? "rotate-90" : ""
-                  }`}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5l7 7-7 7"
-                  />
-                </svg>
-                <span className="font-heading text-stone-800">{category}</span>
+                <ChevronRight
+                  className={cn(
+                    "h-4 w-4 text-muted-foreground transition-transform",
+                    expanded && "rotate-90"
+                  )}
+                />
+                <span className="font-heading text-foreground">
+                  {category}
+                </span>
               </div>
               <div className="flex items-center gap-3">
-                <span className="text-xs text-stone-400">
+                <span className="text-xs text-muted-foreground">
                   {completed}/{total}
                 </span>
-                <div className="w-24 bg-stone-100 rounded-full h-1.5">
-                  <div
-                    className="bg-green-600 h-1.5 rounded-full transition-all"
-                    style={{
-                      width: `${total > 0 ? (completed / total) * 100 : 0}%`,
-                    }}
-                  />
-                </div>
+                <Progress value={progressPct} className="w-24 h-1.5" />
               </div>
             </button>
 
             {expanded && filteredItems.length > 0 && (
-              <ul className="border-t border-stone-100 divide-y divide-stone-50">
-                {filteredItems.map((item) => {
-                  const dueDate = getDueDate(weddingDate, item.monthsBefore);
-                  const overdue = !item.completed && dueDate < now;
-                  const soon =
-                    !item.completed &&
-                    !overdue &&
-                    dueDate.getTime() - now.getTime() <
-                      14 * 24 * 60 * 60 * 1000;
+              <CardContent className="pt-0 pb-2 border-t">
+                <ul className="divide-y divide-border/50">
+                  {filteredItems.map((item) => {
+                    const dueDate = getDueDate(weddingDate, item.monthsBefore);
+                    const overdue = !item.completed && dueDate < now;
+                    const soon =
+                      !item.completed &&
+                      !overdue &&
+                      dueDate.getTime() - now.getTime() <
+                        14 * 24 * 60 * 60 * 1000;
 
-                  return (
-                    <li key={item.id} className="px-4 py-3">
-                      <div className="flex items-start gap-3">
-                        <input
-                          type="checkbox"
-                          checked={item.completed}
-                          onChange={() =>
-                            handleToggle(item.id, !item.completed)
-                          }
-                          className="mt-0.5 rounded border-stone-300"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between gap-2">
-                            <span
-                              className={`text-sm ${
-                                item.completed
-                                  ? "line-through text-stone-400"
-                                  : "text-stone-700"
-                              }`}
-                            >
-                              {item.title}
-                            </span>
-                            <div className="flex items-center gap-2 shrink-0">
+                    return (
+                      <li key={item.id} className="py-3">
+                        <div className="flex items-start gap-3">
+                          <Checkbox
+                            checked={item.completed}
+                            onCheckedChange={() =>
+                              handleToggle(item.id, !item.completed)
+                            }
+                            className="mt-0.5"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-2">
                               <span
-                                className={`text-xs px-2 py-0.5 rounded-full ${
-                                  item.completed
-                                    ? "bg-green-50 text-green-600"
-                                    : overdue
-                                      ? "bg-red-50 text-red-600"
-                                      : soon
-                                        ? "bg-amber-50 text-amber-600"
-                                        : "bg-stone-50 text-stone-500"
-                                }`}
+                                className={cn(
+                                  "text-sm",
+                                  item.completed &&
+                                    "line-through text-muted-foreground"
+                                )}
                               >
-                                {item.completed
-                                  ? "Done"
-                                  : formatDate(dueDate)}
+                                {item.title}
                               </span>
-                              <button
-                                onClick={() =>
-                                  setEditingNotes(
-                                    editingNotes === item.id ? null : item.id
-                                  )
-                                }
-                                className="text-stone-300 hover:text-stone-500 transition-colors"
-                              >
-                                <svg
-                                  className="w-4 h-4"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  viewBox="0 0 24 24"
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                <Badge
+                                  variant={
+                                    item.completed
+                                      ? "secondary"
+                                      : overdue
+                                        ? "destructive"
+                                        : soon
+                                          ? "default"
+                                          : "outline"
+                                  }
                                 >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                                  />
-                                </svg>
-                              </button>
-                              {item.isCustom && (
-                                <button
-                                  onClick={() => handleRemove(item.id)}
-                                  className="text-stone-300 hover:text-red-500 transition-colors"
+                                  {item.completed
+                                    ? "Done"
+                                    : formatDate(dueDate)}
+                                </Badge>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 relative"
+                                  onClick={() =>
+                                    setEditingNotes(
+                                      editingNotes === item.id
+                                        ? null
+                                        : item.id
+                                    )
+                                  }
                                 >
-                                  <svg
-                                    className="w-4 h-4"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
+                                  <Pencil className="h-3.5 w-3.5" />
+                                  {item.notes && editingNotes !== item.id && (
+                                    <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-primary" />
+                                  )}
+                                </Button>
+                                {item.isCustom && (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                                    onClick={() => handleRemove(item.id)}
                                   >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      strokeWidth={2}
-                                      d="M6 18L18 6M6 6l12 12"
-                                    />
-                                  </svg>
-                                </button>
-                              )}
+                                    <X className="h-3.5 w-3.5" />
+                                  </Button>
+                                )}
+                              </div>
                             </div>
+                            {editingNotes === item.id && (
+                              <Textarea
+                                value={item.notes}
+                                onChange={(e) =>
+                                  handleNotesChange(item.id, e.target.value)
+                                }
+                                onBlur={() =>
+                                  handleNotesSave(item.id, item.notes)
+                                }
+                                placeholder="Add notes..."
+                                rows={2}
+                                className="mt-2 resize-none"
+                              />
+                            )}
+                            {editingNotes !== item.id && item.notes && (
+                              <p className="mt-1 text-xs text-muted-foreground italic">
+                                {item.notes}
+                              </p>
+                            )}
                           </div>
-                          {editingNotes === item.id && (
-                            <textarea
-                              value={item.notes}
-                              onChange={(e) =>
-                                handleNotesChange(item.id, e.target.value)
-                              }
-                              onBlur={() =>
-                                handleNotesSave(item.id, item.notes)
-                              }
-                              placeholder="Add notes..."
-                              rows={2}
-                              className="mt-2 w-full px-3 py-2 border border-stone-200 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-stone-300 resize-none"
-                            />
-                          )}
-                          {editingNotes !== item.id && item.notes && (
-                            <p className="mt-1 text-xs text-stone-400 italic">
-                              {item.notes}
-                            </p>
-                          )}
                         </div>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </CardContent>
             )}
             {expanded && filteredItems.length === 0 && (
-              <p className="px-4 py-3 text-sm text-stone-400 border-t border-stone-100">
-                {hideCompleted
-                  ? "All tasks in this category are completed!"
-                  : "No tasks"}
-              </p>
+              <CardContent className="pt-0 border-t">
+                <p className="text-sm text-muted-foreground py-3">
+                  {hideCompleted
+                    ? "All tasks in this category are completed!"
+                    : "No tasks"}
+                </p>
+              </CardContent>
             )}
-          </div>
+          </Card>
         );
       })}
     </div>

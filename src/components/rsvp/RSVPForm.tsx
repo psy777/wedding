@@ -7,8 +7,8 @@ import PlusOneSection from "./PlusOneSection";
 import ChildrenSection from "./ChildrenSection";
 import AddressFields from "./AddressFields";
 import TOSSection from "./TOSSection";
-import Button from "@/components/ui/Button";
-import { inputBaseStyles } from "@/components/ui/Input";
+import Button from "@/components/ui/button";
+import { inputBaseStyles } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
 interface RSVPFormProps {
@@ -235,11 +235,10 @@ export default function RSVPForm({
         <div className="mt-8">
           <Button
             type="submit"
-            loading={submitting}
-            disabled={!canSubmit}
+            disabled={submitting || !canSubmit}
             className="w-full text-xl py-4"
           >
-            {alreadySubmitted ? "Update RSVP" : "Submit RSVP"}
+            {submitting ? "Submitting..." : alreadySubmitted ? "Update RSVP" : "Submit RSVP"}
           </Button>
         </div>
       </div>

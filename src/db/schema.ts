@@ -12,8 +12,33 @@ export const weddingSettings = pgTable("wedding_settings", {
   id: serial("id").primaryKey(),
   weddingDate: text("wedding_date").default("2027-01-01"),
   totalBudget: doublePrecision("total_budget").default(0),
+  partner1Name: text("partner1_name").default(""),
+  partner2Name: text("partner2_name").default(""),
+  venueName: text("venue_name").default(""),
+  venueAddress: text("venue_address").default(""),
+  venueCity: text("venue_city").default(""),
+  venueState: text("venue_state").default(""),
+  venueZip: text("venue_zip").default(""),
+  venueMapUrl: text("venue_map_url").default(""),
+  ceremonyTime: text("ceremony_time").default(""),
+  receptionTime: text("reception_time").default(""),
+  rsvpDeadline: text("rsvp_deadline").default(""),
+  dressCode: text("dress_code").default(""),
+  directions: text("directions").default(""),
+  parking: text("parking").default(""),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const hotels = pgTable("hotels", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  address: text("address").default(""),
+  phone: text("phone").default(""),
+  notes: text("notes").default(""),
+  bookingUrl: text("booking_url").default(""),
+  sortOrder: integer("sort_order").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 export const checklistItems = pgTable("checklist_items", {
@@ -29,9 +54,20 @@ export const checklistItems = pgTable("checklist_items", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+export const budgetCategories = pgTable("budget_categories", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  budgetAmount: doublePrecision("budget_amount").default(0),
+  sortOrder: integer("sort_order").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export const budgetItems = pgTable("budget_items", {
   id: serial("id").primaryKey(),
-  category: text("category").notNull(),
+  categoryId: integer("category_id")
+    .notNull()
+    .references(() => budgetCategories.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   estimated: doublePrecision("estimated").default(0),
   actual: doublePrecision("actual").default(0),

@@ -1,6 +1,6 @@
 "use client";
 
-import Input from "@/components/ui/Input";
+import Input from "@/components/ui/input";
 import AttendanceToggle from "./AttendanceToggle";
 
 interface PlusOneSectionProps {
@@ -27,8 +27,8 @@ export default function PlusOneSection({
 
       <div className="space-y-4">
         <Input
-          label="Guest Name"
-          placeholder="Enter your guest's full name"
+          aria-label="Guest Name"
+          placeholder="Guest's full name"
           value={plusOneName}
           onChange={(e) => onNameChange(e.target.value)}
         />

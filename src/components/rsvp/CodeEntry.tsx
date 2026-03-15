@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
+import Button from "@/components/ui/button";
+import Input from "@/components/ui/input";
 
 interface CodeEntryProps {
   onLookup: (code: string) => Promise<void>;
@@ -46,11 +46,10 @@ export default function CodeEntry({ onLookup, loading, error }: CodeEntryProps) 
 
         <Button
           type="submit"
-          loading={loading}
-          disabled={!code.trim()}
+          disabled={loading || !code.trim()}
           className="w-full"
         >
-          Look Up My Invitation
+          {loading ? "Looking up..." : "Look Up My Invitation"}
         </Button>
       </form>
     </div>
