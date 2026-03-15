@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
 
 interface FlowerProps {
-  color?: "coral" | "purple";
+  color?: "coral" | "purple" | "blue";
   size?: number;
   className?: string;
 }
@@ -9,6 +9,7 @@ interface FlowerProps {
 const PALETTES = {
   coral: { fill: "#FE5F55", shadow: "#DB5A42" },
   purple: { fill: "#E2C2FF", shadow: "#B084CC" },
+  blue: { fill: "#7BA4CC", shadow: "#5A83AB" },
 };
 
 export default function Flower({

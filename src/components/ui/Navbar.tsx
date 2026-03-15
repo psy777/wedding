@@ -56,6 +56,13 @@ export default function Navbar({ partner1, partner2 }: Props) {
               >
                 RSVP
               </Link>
+              <Link
+                href="/plan"
+                className="opacity-60 hover:opacity-100 transition-opacity duration-300"
+                aria-label="Planning login"
+              >
+                <Flower color="blue" size={20} />
+              </Link>
             </div>
 
             {/* Mobile hamburger */}
@@ -78,6 +85,14 @@ export default function Navbar({ partner1, partner2 }: Props) {
           <div className="flex items-center gap-2 mb-8">
             <Flower color="coral" size={12} />
             <Flower color="purple" size={10} />
+            <Link
+              href="/plan"
+              className="opacity-50 hover:opacity-100 transition-opacity duration-300 ml-1"
+              onClick={() => setMenuOpen(false)}
+              aria-label="Planning login"
+            >
+              <Flower color="blue" size={14} />
+            </Link>
           </div>
           <div className="flex flex-col gap-6">
             <Link
