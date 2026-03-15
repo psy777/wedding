@@ -1,14 +1,32 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { updateSettings, addHotel, updateHotel, removeHotel } from "@/actions/settings";
+import {
+  setPin,
+  removePin,
+  getPasskeyRegistrationOptions,
+  completePasskeyRegistration,
+  removePasskey,
+} from "@/actions/plan-auth";
+import { startRegistration, browserSupportsWebAuthn } from "@simplewebauthn/browser";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
-import { Plus, Trash2, Save, Loader2 } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+  Save,
+  Loader2,
+  Shield,
+  Fingerprint,
+  ShieldCheck,
+  ShieldOff,
+} from "lucide-react";
 
 interface Hotel {
   id: number;
@@ -38,19 +56,42 @@ interface Settings {
   parking: string;
 }
 
+interface PasskeyInfo {
+  id: string;
+  createdAt: string;
+}
+
 interface Props {
   settings: Settings;
   hotels: Hotel[];
+  hasPin: boolean;
+  passkeys: PasskeyInfo[];
 }
 
 export default function SettingsForm({
   settings: initial,
   hotels: initialHotels,
+  hasPin: initialHasPin,
+  passkeys: initialPasskeys,
 }: Props) {
   const [form, setForm] = useState<Settings>(initial);
   const [hotelList, setHotelList] = useState<Hotel[]>(initialHotels);
   const [isPending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
+  const router = useRouter();
+
+  // Security state
+  const [hasPin, setHasPin] = useState(initialHasPin);
+  const [passkeys, setPasskeys] = useState<PasskeyInfo[]>(initialPasskeys);
+  const [currentPin, setCurrentPin] = useState("");
+  const [newPin, setNewPin] = useState("");
+  const [pinError, setPinError] = useState("");
+  const [pinSuccess, setPinSuccess] = useState("");
+  const [canWebAuthn, setCanWebAuthn] = useState(false);
+
+  useEffect(() => {
+    setCanWebAuthn(browserSupportsWebAuthn());
+  }, []);
 
   const set = (key: keyof Settings, value: string | number) =>
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -105,6 +146,70 @@ export default function SettingsForm({
     setHotelList((prev) => prev.filter((h) => h.id !== id));
     startTransition(async () => {
       await removeHotel(id);
+    });
+  };
+
+  // ── Security handlers ──
+
+  const handleSetPin = () => {
+    setPinError("");
+    setPinSuccess("");
+    startTransition(async () => {
+      const result = await setPin(hasPin ? currentPin : null, newPin);
+      if (result.success) {
+        setHasPin(true);
+        setCurrentPin("");
+        setNewPin("");
+        setPinSuccess(hasPin ? "PIN updated" : "PIN set");
+        setTimeout(() => setPinSuccess(""), 2000);
+      } else {
+        setPinError(result.error || "Failed");
+      }
+    });
+  };
+
+  const handleRemovePin = () => {
+    setPinError("");
+    setPinSuccess("");
+    startTransition(async () => {
+      const result = await removePin(currentPin);
+      if (result.success) {
+        setHasPin(false);
+        setPasskeys([]);
+        setCurrentPin("");
+        setNewPin("");
+        setPinSuccess("PIN removed");
+        setTimeout(() => setPinSuccess(""), 2000);
+      } else {
+        setPinError(result.error || "Failed");
+      }
+    });
+  };
+
+  const handleAddPasskey = () => {
+    setPinError("");
+    startTransition(async () => {
+      try {
+        const options = await getPasskeyRegistrationOptions();
+        const response = await startRegistration({ optionsJSON: options });
+        const result = await completePasskeyRegistration(response);
+        if (result.success) {
+          setPinSuccess("Passkey registered");
+          setTimeout(() => setPinSuccess(""), 2000);
+          router.refresh();
+        } else {
+          setPinError(result.error || "Registration failed");
+        }
+      } catch {
+        setPinError("Passkey registration cancelled");
+      }
+    });
+  };
+
+  const handleRemovePasskey = (id: string) => {
+    startTransition(async () => {
+      await removePasskey(id);
+      setPasskeys((prev) => prev.filter((p) => p.id !== id));
     });
   };
 
@@ -407,6 +512,156 @@ export default function SettingsForm({
                 </Card>
               ))}
             </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Separator />
+
+      {/* ── Security ── */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Shield className="h-5 w-5 text-muted-foreground" />
+            <CardTitle className="font-heading">Security</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          <p className="text-sm text-muted-foreground">
+            {hasPin
+              ? "Your planning pages are protected with a PIN."
+              : "Set a numeric PIN to protect your planning pages."}
+          </p>
+
+          {/* PIN management */}
+          <div className="space-y-3">
+            {hasPin && (
+              <div className="space-y-1.5">
+                <Label htmlFor="currentPin">Current PIN</Label>
+                <Input
+                  id="currentPin"
+                  type="password"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  placeholder="Enter current PIN"
+                  value={currentPin}
+                  onChange={(e) =>
+                    setCurrentPin(e.target.value.replace(/\D/g, ""))
+                  }
+                  maxLength={8}
+                />
+              </div>
+            )}
+            <div className="space-y-1.5">
+              <Label htmlFor="newPin">
+                {hasPin ? "New PIN" : "PIN (4–8 digits)"}
+              </Label>
+              <Input
+                id="newPin"
+                type="password"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                placeholder={hasPin ? "Enter new PIN" : "Choose a PIN"}
+                value={newPin}
+                onChange={(e) => setNewPin(e.target.value.replace(/\D/g, ""))}
+                maxLength={8}
+              />
+            </div>
+
+            {pinError && (
+              <p className="text-sm text-destructive">{pinError}</p>
+            )}
+            {pinSuccess && (
+              <p className="text-sm text-green-600">{pinSuccess}</p>
+            )}
+
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                onClick={handleSetPin}
+                disabled={
+                  isPending ||
+                  newPin.length < 4 ||
+                  (hasPin && !currentPin)
+                }
+              >
+                <ShieldCheck className="h-4 w-4 mr-1" />
+                {hasPin ? "Update PIN" : "Set PIN"}
+              </Button>
+              {hasPin && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="text-muted-foreground hover:text-destructive"
+                  onClick={handleRemovePin}
+                  disabled={isPending || !currentPin}
+                >
+                  <ShieldOff className="h-4 w-4 mr-1" />
+                  Remove PIN
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {/* Passkey management — only available when PIN is set */}
+          {hasPin && (
+            <>
+              <Separator />
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium">Passkeys</p>
+                    <p className="text-xs text-muted-foreground">
+                      Use Face ID or Touch ID to unlock
+                    </p>
+                  </div>
+                  {canWebAuthn && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleAddPasskey}
+                      disabled={isPending}
+                    >
+                      <Fingerprint className="h-4 w-4 mr-1" />
+                      Add Passkey
+                    </Button>
+                  )}
+                </div>
+
+                {passkeys.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">
+                    No passkeys registered.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {passkeys.map((pk) => (
+                      <div
+                        key={pk.id}
+                        className="flex items-center justify-between rounded-md border border-border px-3 py-2"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Fingerprint className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm">
+                            Registered{" "}
+                            {pk.createdAt
+                              ? new Date(pk.createdAt).toLocaleDateString()
+                              : ""}
+                          </span>
+                        </div>
+                        <Button
+                          size="icon-xs"
+                          variant="ghost"
+                          className="text-muted-foreground hover:text-destructive"
+                          onClick={() => handleRemovePasskey(pk.id)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
           )}
         </CardContent>
       </Card>

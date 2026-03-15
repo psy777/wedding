@@ -26,6 +26,7 @@ export const weddingSettings = pgTable("wedding_settings", {
   dressCode: text("dress_code").default(""),
   directions: text("directions").default(""),
   parking: text("parking").default(""),
+  planPasscode: text("plan_passcode").default(""),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -86,6 +87,14 @@ export const budgetAttachments = pgTable("budget_attachments", {
   fileUrl: text("file_url").notNull(),
   fileSize: integer("file_size"),
   contentType: text("content_type"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const passkeyCredentials = pgTable("passkey_credentials", {
+  id: text("id").primaryKey(),
+  publicKey: text("public_key").notNull(),
+  counter: integer("counter").notNull().default(0),
+  transports: text("transports").default("[]"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

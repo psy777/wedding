@@ -23,7 +23,7 @@ export default function PlanNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground mb-6">
+    <nav className="flex sm:inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground mb-6">
       {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
         const isActive = pathname === href;
         return (
@@ -31,14 +31,15 @@ export default function PlanNav() {
             key={href}
             href={href}
             className={cn(
-              "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium transition-all",
+              "inline-flex items-center justify-center whitespace-nowrap rounded-sm py-1.5 text-sm font-medium transition-all",
+              "flex-1 sm:flex-none px-2 sm:px-3 sm:gap-2",
               isActive
                 ? "bg-background text-foreground shadow-sm"
                 : "hover:text-foreground"
             )}
           >
             <Icon className="h-4 w-4" />
-            {label}
+            <span className="hidden sm:inline">{label}</span>
           </Link>
         );
       })}
