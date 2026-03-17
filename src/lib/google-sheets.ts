@@ -117,6 +117,100 @@ export async function lookupHousehold(code: string): Promise<HouseholdData | nul
   return null;
 }
 
+const LOG_SHEET_NAME = "Log";
+
+async function ensureLogSheet(): Promise<void> {
+  const sheets = getSheetClient();
+  const meta = await sheets.spreadsheets.get({
+    spreadsheetId: SHEET_ID(),
+    fields: "sheets.properties.title",
+  });
+
+  const exists = meta.data.sheets?.some(
+    (s) => s.properties?.title === LOG_SHEET_NAME
+  );
+
+  if (!exists) {
+    await sheets.spreadsheets.batchUpdate({
+      spreadsheetId: SHEET_ID(),
+      requestBody: {
+        requests: [
+          { addSheet: { properties: { title: LOG_SHEET_NAME } } },
+        ],
+      },
+    });
+
+    // Write header row
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: SHEET_ID(),
+      range: `'${LOG_SHEET_NAME}'!A1`,
+      valueInputOption: "RAW",
+      requestBody: {
+        values: [[
+          "timestamp",
+          "household_code",
+          "head_attending",
+          "family_attending",
+          "plus_one_name",
+          "plus_one_attending",
+          "children_names",
+          "children_count",
+          "street_address",
+          "city",
+          "state",
+          "zip",
+          "dietary_notes",
+        ]],
+      },
+    });
+  }
+}
+
+async function appendToLog(
+  householdCode: string,
+  data: {
+    headAttending: string;
+    familyAttending: string[];
+    plusOneName: string;
+    plusOneAttending: string;
+    childrenNames: string[];
+    childrenCount: number;
+    streetAddress: string;
+    city: string;
+    state: string;
+    zip: string;
+    dietaryNotes: string;
+  }
+): Promise<void> {
+  const sheets = getSheetClient();
+
+  await ensureLogSheet();
+
+  await sheets.spreadsheets.values.append({
+    spreadsheetId: SHEET_ID(),
+    range: `'${LOG_SHEET_NAME}'!A:A`,
+    valueInputOption: "RAW",
+    insertDataOption: "INSERT_ROWS",
+    requestBody: {
+      values: [[
+        new Date().toISOString(),
+        householdCode,
+        data.headAttending,
+        data.familyAttending.join(", "),
+        data.plusOneName,
+        data.plusOneAttending,
+        data.childrenNames.join(", "),
+        data.childrenCount.toString(),
+        data.streetAddress,
+        data.city,
+        data.state,
+        data.zip,
+        data.dietaryNotes,
+      ]],
+    },
+  });
+}
+
 export async function writeRSVP(
   rowIndex: number,
   householdCode: string,
@@ -129,7 +223,6 @@ export async function writeRSVP(
     childrenCount: number;
     dietaryNotes: string;
     tosAccepted: boolean;
-    phone: string;
     streetAddress: string;
     city: string;
     state: string;
@@ -193,8 +286,7 @@ export async function writeRSVP(
     });
   }
 
-  // Write address/email fields
-  addUpdate("phone", data.phone);
+  // Write address fields
   addUpdate("street_address", data.streetAddress);
   addUpdate("city", data.city);
   addUpdate("state", data.state);
@@ -208,10 +300,13 @@ export async function writeRSVP(
   addUpdate("children_names", data.childrenNames.join(", "));
   addUpdate("children_count", data.childrenCount.toString());
   addUpdate("dietary_notes", data.dietaryNotes);
-  addUpdate("tos_accepted", data.tosAccepted ? "yes" : "");
-  addUpdate("tos_accepted_at", data.tosAccepted ? now : "");
+  addUpdate("tos_accepted", "yes");
+  addUpdate("tos_accepted_at", now);
   addUpdate("submitted_at", existingSubmittedAt || now);
   addUpdate("updated_at", now);
+
+  // Append to audit log before updating main sheet
+  await appendToLog(householdCode, data);
 
   await sheets.spreadsheets.values.batchUpdate({
     spreadsheetId: SHEET_ID(),

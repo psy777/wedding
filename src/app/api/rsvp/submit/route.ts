@@ -18,18 +18,18 @@ export async function POST(request: NextRequest): Promise<NextResponse<SubmitRes
       );
     }
 
-    // Validate TOS accepted
-    if (!formData.tosAccepted) {
-      return NextResponse.json(
-        { success: false, error: "You must accept the terms and conditions." },
-        { status: 400 }
-      );
-    }
-
     // Validate head attendance selected
     if (!formData.headAttending) {
       return NextResponse.json(
         { success: false, error: "Please indicate whether you will be attending." },
+        { status: 400 }
+      );
+    }
+
+    // Validate mailing address
+    if (!formData.streetAddress?.trim() || !formData.city?.trim() || !formData.state?.trim() || !formData.zip?.trim()) {
+      return NextResponse.json(
+        { success: false, error: "Please provide your full mailing address." },
         { status: 400 }
       );
     }
@@ -75,7 +75,6 @@ export async function POST(request: NextRequest): Promise<NextResponse<SubmitRes
       childrenCount: formData.childrenCount,
       dietaryNotes: formData.dietaryNotes,
       tosAccepted: formData.tosAccepted,
-      phone: formData.phone,
       streetAddress: formData.streetAddress,
       city: formData.city,
       state: formData.state,

@@ -73,5 +73,5 @@ Your personal information (name, address, phone) is collected solely for wedding
 8. EVENT MODIFICATIONS
 The couple reserves the right to modify event details (time, location, schedule) and will communicate any changes to confirmed guests.
 
-By checking the box below, you confirm that you have read, understood, and agree to these terms on behalf of yourself and all members of your household listed in this RSVP.`,
+`,
 };

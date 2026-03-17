@@ -1,12 +1,12 @@
 "use client";
 
-import { useReducer, useState } from "react";
+import { useReducer, useState, useCallback } from "react";
 import { HouseholdData, RSVPFormState, RSVPFormAction } from "@/lib/types";
 import PersonCard from "./PersonCard";
 import PlusOneSection from "./PlusOneSection";
 import ChildrenSection from "./ChildrenSection";
 import AddressFields from "./AddressFields";
-import TOSSection from "./TOSSection";
+import Link from "next/link";
 import Button from "@/components/ui/button";
 import { inputBaseStyles } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -96,9 +96,31 @@ export default function RSVPForm({
   );
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [addressSuggestion, setAddressSuggestion] = useState<{
+    street: string; city: string; state: string; zip: string;
+  } | null>(null);
+  const [addressInvalid, setAddressInvalid] = useState(false);
 
   const canSubmit =
-    state.headAttending !== "" && state.tosAccepted && !submitting;
+    state.headAttending !== "" &&
+    state.streetAddress.trim() !== "" &&
+    state.city.trim() !== "" &&
+    state.state.trim() !== "" &&
+    state.zip.trim() !== "" &&
+    !submitting;
+
+  const submitRSVP = useCallback(async (formState: RSVPFormState) => {
+    setSubmitting(true);
+    setError("");
+    try {
+      await onSubmit(formState);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Something went wrong. Please try again."
+      );
+      setSubmitting(false);
+    }
+  }, [onSubmit]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -106,24 +128,72 @@ export default function RSVPForm({
 
     setSubmitting(true);
     setError("");
+    setAddressSuggestion(null);
+    setAddressInvalid(false);
 
     try {
-      await onSubmit(state);
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Something went wrong. Please try again."
-      );
-      setSubmitting(false);
+      const res = await fetch("/api/address/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          street: state.streetAddress,
+          city: state.city,
+          state: state.state,
+          zip: state.zip,
+        }),
+      });
+
+      const result = await res.json();
+
+      if (!result.valid) {
+        setAddressInvalid(true);
+        setSubmitting(false);
+        return;
+      }
+
+      if (result.suggested) {
+        setAddressSuggestion(result.suggested);
+        setSubmitting(false);
+        return;
+      }
+
+      await submitRSVP(state);
+    } catch {
+      // Validation failed to reach API — submit anyway
+      await submitRSVP(state);
     }
+  };
+
+  const handleUseSuggested = async () => {
+    if (!addressSuggestion) return;
+    dispatch({ type: "SET_STREET_ADDRESS", value: addressSuggestion.street });
+    dispatch({ type: "SET_CITY", value: addressSuggestion.city });
+    dispatch({ type: "SET_STATE", value: addressSuggestion.state });
+    dispatch({ type: "SET_ZIP", value: addressSuggestion.zip });
+    setAddressSuggestion(null);
+    await submitRSVP({
+      ...state,
+      streetAddress: addressSuggestion.street,
+      city: addressSuggestion.city,
+      state: addressSuggestion.state,
+      zip: addressSuggestion.zip,
+    });
+  };
+
+  const handleKeepOriginal = async () => {
+    setAddressSuggestion(null);
+    await submitRSVP(state);
+  };
+
+  const handleSubmitAnywayInvalid = async () => {
+    setAddressInvalid(false);
+    await submitRSVP(state);
   };
 
   return (
     <form onSubmit={handleSubmit} className="max-w-2xl mx-auto animate-fade-in-up">
       {/* Greeting */}
       <div className="text-center mb-10">
-        <p className="text-lg uppercase tracking-[0.3em] text-gold mb-3 font-body">
-          Your Response
-        </p>
         <h2 className="font-heading text-3xl text-ink font-light mb-2">
           Welcome, {household.headOfHousehold}
         </h2>
@@ -132,6 +202,17 @@ export default function RSVPForm({
             You&apos;ve already submitted your RSVP. Feel free to update your response below.
           </p>
         )}
+        {household.maxChildren === 0 && (() => {
+          const seatCount = 1 + household.familyMembers.length + (household.plusOneAllowed ? 1 : 0);
+          return (
+            <p className="text-lg text-ink font-body mt-4">
+              <span className="text-gold">✿</span>{" "}
+              We are so excited to celebrate with you! We have reserved{" "}
+              {seatCount} {seatCount === 1 ? "seat" : "seats"} in your honor.{" "}
+              <span className="text-gold">✿</span>
+            </p>
+          );
+        })()}
       </div>
 
       <div>
@@ -146,9 +227,9 @@ export default function RSVPForm({
         />
 
         {/* Family members */}
-        {household.familyMembers.map((member) => (
+        {household.familyMembers.map((member, idx) => (
           <PersonCard
-            key={member}
+            key={`${member}-${idx}`}
             name={member}
             attending={state.familyAttending[member] || ""}
             onChange={(value) =>
@@ -173,7 +254,7 @@ export default function RSVPForm({
         )}
 
         {/* Children */}
-        {household.maxChildren !== null && household.maxChildren > 0 && (
+        {household.maxChildren !== null && (
           <ChildrenSection
             maxChildren={household.maxChildren}
             childrenCount={state.childrenCount}
@@ -189,12 +270,10 @@ export default function RSVPForm({
 
         {/* Address fields */}
         <AddressFields
-          phone={state.phone}
           streetAddress={state.streetAddress}
           city={state.city}
           state={state.state}
           zip={state.zip}
-          onPhoneChange={(value) => dispatch({ type: "SET_PHONE", value })}
           onStreetChange={(value) =>
             dispatch({ type: "SET_STREET_ADDRESS", value })
           }
@@ -215,28 +294,65 @@ export default function RSVPForm({
             }
             placeholder="Any food allergies or dietary restrictions we should know about?"
             rows={3}
-            className={cn(...inputBaseStyles, "resize-none")}
+            className={cn(...inputBaseStyles, "resize-none bg-linen/60 w-full")}
           />
         </div>
 
-        {/* TOS */}
-        <TOSSection
-          accepted={state.tosAccepted}
-          onChange={(value) =>
-            dispatch({ type: "SET_TOS_ACCEPTED", value })
-          }
-        />
+        {/* Address suggestion */}
+        {addressSuggestion && (
+          <div className="mt-6 p-5 border border-gold/50 bg-linen/80">
+            <p className="text-lg font-body text-ink mb-3">
+              Did you mean this address?
+            </p>
+            <div className="mb-4 p-3 bg-white/60 border border-sand/50 text-ink font-body">
+              <p>{addressSuggestion.street}</p>
+              <p>{addressSuggestion.city}, {addressSuggestion.state} {addressSuggestion.zip}</p>
+            </div>
+            <div className="flex gap-3">
+              <Button type="button" onClick={handleUseSuggested} className="flex-1 py-2">
+                Use Suggested
+              </Button>
+              <Button type="button" onClick={handleKeepOriginal} className="flex-1 py-2 bg-transparent border border-sand text-clay hover:border-ink hover:text-ink">
+                Keep Mine
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Invalid address warning */}
+        {addressInvalid && (
+          <div className="mt-6 p-5 border border-wine/30 bg-linen/80">
+            <p className="text-lg font-body text-ink mb-3">
+              We couldn&apos;t verify that address. Please double-check it, or submit as-is.
+            </p>
+            <div className="flex gap-3">
+              <Button type="button" onClick={() => setAddressInvalid(false)} className="flex-1 py-2">
+                Edit Address
+              </Button>
+              <Button type="button" onClick={handleSubmitAnywayInvalid} className="flex-1 py-2 bg-transparent border border-sand text-clay hover:border-ink hover:text-ink">
+                Submit Anyway
+              </Button>
+            </div>
+          </div>
+        )}
 
         {/* Submit */}
         {error && (
           <p className="text-wine text-lg text-center mt-6">{error}</p>
         )}
 
-        <div className="mt-8">
+        <div className="mt-8 flex flex-col items-center">
+          <p className="text-sm text-clay text-center mb-3 font-body">
+            By submitting your RSVP, you agree to our{" "}
+            <Link href="/event-policies" className="text-gold underline hover:text-ink transition-colors duration-300">
+              Event Policies
+            </Link>
+            .
+          </p>
           <Button
             type="submit"
             disabled={submitting || !canSubmit}
-            className="w-full text-xl py-4"
+            className="text-xl py-5 px-12"
           >
             {submitting ? "Submitting..." : alreadySubmitted ? "Update RSVP" : "Submit RSVP"}
           </Button>
