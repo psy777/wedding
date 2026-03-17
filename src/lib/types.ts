@@ -4,7 +4,7 @@ export interface HouseholdData {
   headOfHousehold: string;
   familyMembers: string[];
   plusOneAllowed: boolean;
-  maxChildren: number;
+  maxChildren: number | null;
   phone: string;
   streetAddress: string;
   city: string;

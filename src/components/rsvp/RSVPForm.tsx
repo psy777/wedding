@@ -72,7 +72,7 @@ function buildInitialState(household: HouseholdData): RSVPFormState {
     plusOneAttending: household.plusOneAttending,
     childrenNames: household.childrenNames.length > 0
       ? household.childrenNames
-      : Array(household.maxChildren).fill(""),
+      : Array(household.maxChildren ?? 0).fill(""),
     childrenCount: household.childrenCount,
     phone: household.phone,
     streetAddress: household.streetAddress,
@@ -173,7 +173,7 @@ export default function RSVPForm({
         )}
 
         {/* Children */}
-        {household.maxChildren > 0 && (
+        {household.maxChildren !== null && household.maxChildren > 0 && (
           <ChildrenSection
             maxChildren={household.maxChildren}
             childrenCount={state.childrenCount}

@@ -91,7 +91,10 @@ export async function lookupHousehold(code: string): Promise<HouseholdData | nul
         headOfHousehold: getCellValue(row, colMap, "head_of_household"),
         familyMembers,
         plusOneAllowed: getCellValue(row, colMap, "plus_one_allowed").toLowerCase() === "yes",
-        maxChildren: parseInt(getCellValue(row, colMap, "max_children") || "0", 10),
+        maxChildren: (() => {
+          const raw = getCellValue(row, colMap, "max_children").trim();
+          return raw === "" ? null : parseInt(raw, 10);
+        })(),
         phone: getCellValue(row, colMap, "phone"),
         streetAddress: getCellValue(row, colMap, "street_address"),
         city: getCellValue(row, colMap, "city"),
