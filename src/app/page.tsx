@@ -6,26 +6,36 @@ import CTASection from "@/components/landing/CTASection";
 import Flower from "@/components/ui/Flower";
 import SectionLabel from "@/components/ui/SectionLabel";
 import { getWeddingConfig } from "@/lib/get-wedding-config";
+import Link from "next/link";
 
 function RegistrySection() {
   return (
     <section id="registry" className="py-16 sm:py-24 px-4 sm:px-6 md:px-8 bg-linen">
-      <div className="max-w-2xl mx-auto">
+      <div className="max-w-2xl mx-auto text-center">
         <SectionLabel
           before={[{ color: "coral", size: 14 }]}
           after={[{ color: "purple", size: 10 }]}
+          className="justify-center"
         >
-          Registry
+          Anniversary Adventure
         </SectionLabel>
-        <h2 className="font-heading text-2xl sm:text-3xl md:text-4xl text-ink font-light mb-8 sm:mb-10">
-          Gifts
+        <h2 className="font-heading text-2xl sm:text-3xl md:text-4xl text-ink font-light mb-6 sm:mb-8">
+          Help Us Get to Paradise
         </h2>
 
-        <p className="text-base sm:text-xl text-clay leading-relaxed font-body italic">
-          We&apos;re lucky to already have a full home — your presence is the
-          real gift. If you&apos;d like to contribute something, we&apos;ve set
-          up a honeymoon fund.
+        <p className="text-base sm:text-xl text-clay leading-relaxed font-body mb-8 sm:mb-10">
+          Instead of a traditional registry, we&apos;re saving for a
+          once-in-a-lifetime trip to Bora Bora for our one year anniversary.
+          Your presence is the greatest gift — but if you&apos;d like to
+          contribute, we&apos;d love your help getting there.
         </p>
+
+        <Link
+          href="/borabora"
+          className="inline-flex items-center justify-center rounded-lg bg-primary text-primary-foreground text-lg py-4 px-10 uppercase tracking-[0.1em] hover:bg-primary/80 transition-colors duration-300"
+        >
+          Explore Our Trip
+        </Link>
       </div>
     </section>
   );

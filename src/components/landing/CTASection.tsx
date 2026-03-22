@@ -30,9 +30,9 @@ export default function CTASection({ rsvpDeadlineDisplay }: Props) {
         </p>
         <Link
           href="/rsvp"
-          className={buttonVariants({ variant: "default", size: "lg", className: "uppercase tracking-[0.1em]" })}
+          className={buttonVariants({ variant: "default", size: "lg", className: "text-xl sm:text-2xl py-6 px-10 sm:py-7 sm:px-12 uppercase tracking-[0.15em]" })}
         >
-          Respond
+          RSVP
         </Link>
         {rsvpDeadlineDisplay && (
           <p className="text-base sm:text-lg text-clay mt-5 sm:mt-6 tracking-wide font-body">
