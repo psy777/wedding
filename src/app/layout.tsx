@@ -21,7 +21,15 @@ const karla = Karla({
 export const metadata: Metadata = {
   title: "Our Wedding",
   description:
-    "Join us as we celebrate our love. RSVP and find all the details for our special day.",
+    "Caleb & Marissa invite you to celebrate their union in Christ — June 20, 2026.",
+  icons: {
+    icon: [
+      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+    ],
+    apple: "/apple-touch-icon.png",
+  },
+  manifest: "/site.webmanifest",
 };
 
 export default function RootLayout({
