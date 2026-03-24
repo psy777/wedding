@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import Navbar from "@/components/ui/Navbar";
 import Hero from "@/components/landing/Hero";
 import EventDetails from "@/components/landing/EventDetails";
