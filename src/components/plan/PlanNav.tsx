@@ -8,6 +8,7 @@ import {
   CheckSquare,
   DollarSign,
   Users,
+  ClipboardList,
   Settings,
 } from "lucide-react";
 
@@ -15,6 +16,7 @@ const NAV_ITEMS = [
   { href: "/plan", label: "Overview", icon: LayoutDashboard },
   { href: "/plan/checklist", label: "Checklist", icon: CheckSquare },
   { href: "/plan/budget", label: "Budget", icon: DollarSign },
+  { href: "/plan/guests", label: "Guests", icon: ClipboardList },
   { href: "/plan/seating", label: "Seating", icon: Users },
   { href: "/plan/settings", label: "Settings", icon: Settings },
 ];

@@ -58,6 +58,64 @@ function parseCommaSeparated(value: string): string[] {
   return value.split(",").map((s) => s.trim()).filter(Boolean);
 }
 
+export async function getAllHouseholds(): Promise<HouseholdData[]> {
+  const sheets = getSheetClient();
+  const sheetName = await getSheetName();
+
+  const response = await sheets.spreadsheets.values.get({
+    spreadsheetId: SHEET_ID(),
+    range: `'${sheetName}'`,
+  });
+
+  const rows = response.data.values;
+  if (!rows || rows.length < 2) return [];
+
+  const headerRow = rows[0].map((h: string) => h.trim().toLowerCase());
+  const colMap = buildColumnMap(headerRow);
+
+  const households: HouseholdData[] = [];
+
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i];
+    const familyMembersRaw = getCellValue(row, colMap, "family_members");
+    const familyMembers = parseCommaSeparated(familyMembersRaw);
+
+    const familyAttendingRaw = getCellValue(row, colMap, "family_attending");
+    const familyAttending = familyMembers.length > 0
+      ? parseCommaSeparated(familyAttendingRaw)
+      : [];
+
+    households.push({
+      rowIndex: i + 1,
+      householdCode: getCellValue(row, colMap, "household_code"),
+      headOfHousehold: getCellValue(row, colMap, "head_of_household"),
+      familyMembers,
+      plusOneAllowed: getCellValue(row, colMap, "plus_one_allowed").toLowerCase() === "yes",
+      maxChildren: (() => {
+        const raw = getCellValue(row, colMap, "max_children").trim();
+        return raw === "" ? null : parseInt(raw, 10);
+      })(),
+      phone: getCellValue(row, colMap, "phone"),
+      streetAddress: getCellValue(row, colMap, "street_address"),
+      city: getCellValue(row, colMap, "city"),
+      state: getCellValue(row, colMap, "state"),
+      zip: getCellValue(row, colMap, "zip"),
+      headAttending: getCellValue(row, colMap, "head_attending") as HouseholdData["headAttending"],
+      familyAttending,
+      plusOneName: getCellValue(row, colMap, "plus_one_name"),
+      plusOneAttending: getCellValue(row, colMap, "plus_one_attending") as HouseholdData["plusOneAttending"],
+      childrenNames: parseCommaSeparated(getCellValue(row, colMap, "children_names")),
+      childrenCount: parseInt(getCellValue(row, colMap, "children_count") || "0", 10),
+      dietaryNotes: getCellValue(row, colMap, "dietary_notes"),
+      tosAccepted: getCellValue(row, colMap, "tos_accepted").toLowerCase() === "yes",
+      submittedAt: getCellValue(row, colMap, "submitted_at"),
+      updatedAt: getCellValue(row, colMap, "updated_at"),
+    });
+  }
+
+  return households;
+}
+
 export async function lookupHousehold(code: string): Promise<HouseholdData | null> {
   const sheets = getSheetClient();
   const sheetName = await getSheetName();
