@@ -21,6 +21,7 @@ export interface HouseholdData {
   tosAccepted: boolean;
   submittedAt: string;
   updatedAt: string;
+  texted: boolean;
 }
 
 export interface LookupResponse {

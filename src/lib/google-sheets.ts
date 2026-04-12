@@ -110,6 +110,7 @@ export async function getAllHouseholds(): Promise<HouseholdData[]> {
       tosAccepted: getCellValue(row, colMap, "tos_accepted").toLowerCase() === "yes",
       submittedAt: getCellValue(row, colMap, "submitted_at"),
       updatedAt: getCellValue(row, colMap, "updated_at"),
+      texted: getCellValue(row, colMap, "texted").toLowerCase() === "yes",
     });
   }
 
@@ -168,11 +169,145 @@ export async function lookupHousehold(code: string): Promise<HouseholdData | nul
         tosAccepted: getCellValue(row, colMap, "tos_accepted").toLowerCase() === "yes",
         submittedAt: getCellValue(row, colMap, "submitted_at"),
         updatedAt: getCellValue(row, colMap, "updated_at"),
+        texted: getCellValue(row, colMap, "texted").toLowerCase() === "yes",
       };
     }
   }
 
   return null;
+}
+
+function colLetter(colIndex: number): string {
+  let letter = "";
+  let idx = colIndex;
+  while (idx >= 0) {
+    letter = String.fromCharCode((idx % 26) + 65) + letter;
+    idx = Math.floor(idx / 26) - 1;
+  }
+  return letter;
+}
+
+export async function updateHouseholdFields(
+  rowIndex: number,
+  householdCode: string,
+  fields: Record<string, string>
+): Promise<void> {
+  const sheets = getSheetClient();
+  const sheetName = await getSheetName();
+
+  // Read headers
+  const headerResponse = await sheets.spreadsheets.values.get({
+    spreadsheetId: SHEET_ID(),
+    range: `'${sheetName}'!1:1`,
+  });
+
+  const headerRow = (headerResponse.data.values?.[0] || []).map((h: string) =>
+    h.trim().toLowerCase()
+  );
+  const colMap = buildColumnMap(headerRow);
+
+  // Verify household code matches row
+  const codeIdx = colMap["household_code"];
+  if (codeIdx !== undefined) {
+    const rowResponse = await sheets.spreadsheets.values.get({
+      spreadsheetId: SHEET_ID(),
+      range: `'${sheetName}'!${colLetter(codeIdx)}${rowIndex}`,
+    });
+    const currentCode = rowResponse.data.values?.[0]?.[0]?.trim();
+    if (currentCode?.toLowerCase() !== householdCode.toLowerCase()) {
+      throw new Error("Household code does not match row.");
+    }
+  }
+
+  const updates: { range: string; values: string[][] }[] = [];
+
+  for (const [key, value] of Object.entries(fields)) {
+    let idx = colMap[key];
+
+    // Auto-create column if it doesn't exist
+    if (idx === undefined) {
+      idx = headerRow.length;
+      headerRow.push(key);
+      colMap[key] = idx;
+      updates.push({
+        range: `'${sheetName}'!${colLetter(idx)}1`,
+        values: [[key]],
+      });
+    }
+
+    updates.push({
+      range: `'${sheetName}'!${colLetter(idx)}${rowIndex}`,
+      values: [[value]],
+    });
+  }
+
+  if (updates.length > 0) {
+    await sheets.spreadsheets.values.batchUpdate({
+      spreadsheetId: SHEET_ID(),
+      requestBody: {
+        valueInputOption: "RAW",
+        data: updates,
+      },
+    });
+  }
+}
+
+export async function deleteHouseholdRow(
+  rowIndex: number,
+  householdCode: string
+): Promise<void> {
+  const sheets = getSheetClient();
+  const sheetName = await getSheetName();
+
+  // Verify household code matches row
+  const headerResponse = await sheets.spreadsheets.values.get({
+    spreadsheetId: SHEET_ID(),
+    range: `'${sheetName}'!1:1`,
+  });
+  const headerRow = (headerResponse.data.values?.[0] || []).map((h: string) =>
+    h.trim().toLowerCase()
+  );
+  const colMap = buildColumnMap(headerRow);
+
+  const codeIdx = colMap["household_code"];
+  if (codeIdx !== undefined) {
+    const rowResponse = await sheets.spreadsheets.values.get({
+      spreadsheetId: SHEET_ID(),
+      range: `'${sheetName}'!${colLetter(codeIdx)}${rowIndex}`,
+    });
+    const currentCode = rowResponse.data.values?.[0]?.[0]?.trim();
+    if (currentCode?.toLowerCase() !== householdCode.toLowerCase()) {
+      throw new Error("Household code does not match row.");
+    }
+  }
+
+  // Get the sheet's numeric ID for the batchUpdate request
+  const meta = await sheets.spreadsheets.get({
+    spreadsheetId: SHEET_ID(),
+    fields: "sheets.properties",
+  });
+  const sheet = meta.data.sheets?.find(
+    (s) => s.properties?.title === sheetName
+  );
+  const sheetId = sheet?.properties?.sheetId ?? 0;
+
+  await sheets.spreadsheets.batchUpdate({
+    spreadsheetId: SHEET_ID(),
+    requestBody: {
+      requests: [
+        {
+          deleteDimension: {
+            range: {
+              sheetId,
+              dimension: "ROWS",
+              startIndex: rowIndex - 1,
+              endIndex: rowIndex,
+            },
+          },
+        },
+      ],
+    },
+  });
 }
 
 const LOG_SHEET_NAME = "Log";
@@ -323,16 +458,6 @@ export async function writeRSVP(
 
   // Build update data - we need to write specific cells
   const updates: { range: string; values: string[][] }[] = [];
-
-  function colLetter(colIndex: number): string {
-    let letter = "";
-    let idx = colIndex;
-    while (idx >= 0) {
-      letter = String.fromCharCode((idx % 26) + 65) + letter;
-      idx = Math.floor(idx / 26) - 1;
-    }
-    return letter;
-  }
 
   function addUpdate(key: string, value: string) {
     const idx = colMap[key];

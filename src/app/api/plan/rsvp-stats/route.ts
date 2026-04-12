@@ -74,17 +74,24 @@ export async function GET() {
         .split(",")
         .map((s: string) => s.trim())
         .filter(Boolean);
-      const attendingFamily = cell("family_attending")
+      const familyStatuses = cell("family_attending")
         .split(",")
         .map((s: string) => s.trim())
         .filter(Boolean);
-      attending += attendingFamily.length;
-      declined += Math.max(0, family.length - attendingFamily.length);
+      for (const status of familyStatuses) {
+        if (status === "attending") attending++;
+        else if (status === "not_attending") declined++;
+      }
+      declined += Math.max(0, family.length - familyStatuses.length);
 
       // Plus one
       const plusOneStatus = cell("plus_one_attending").toLowerCase();
       if (plusOneStatus === "attending") attending++;
       else if (plusOneStatus === "not_attending") declined++;
+
+      // Children
+      const childrenCount = parseInt(cell("children_count")) || 0;
+      attending += childrenCount;
     }
 
     return NextResponse.json({
