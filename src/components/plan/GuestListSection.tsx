@@ -24,10 +24,21 @@ import {
   MessageCircle,
   MessageCircleOff,
   SlidersHorizontal,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  Filter,
 } from "lucide-react";
 import GuestEditSheet from "./GuestEditSheet";
 
 type Filter = "all" | "attending" | "not_attending" | "pending";
+
+type SortField = "household" | "status" | "guests" | "responded";
+type SortDirection = "asc" | "desc";
+type SortState = { field: SortField; direction: SortDirection } | null;
+
+type TextedFilter = "all" | "yes" | "no";
+type DietaryFilter = "all" | "has_notes" | "no_notes";
 
 const ALL_COLUMNS = [
   "members",
@@ -107,19 +118,27 @@ export default function GuestListSection({ households: initialHouseholds }: Prop
     () => new Set(DEFAULT_COLUMNS)
   );
   const [columnsOpen, setColumnsOpen] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [sort, setSort] = useState<SortState>(null);
+  const [textedFilter, setTextedFilter] = useState<TextedFilter>("all");
+  const [dietaryFilter, setDietaryFilter] = useState<DietaryFilter>("all");
   const columnsRef = useRef<HTMLDivElement>(null);
+  const filtersRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdown on outside click
+  // Close dropdowns on outside click
   useEffect(() => {
-    if (!columnsOpen) return;
+    if (!columnsOpen && !filtersOpen) return;
     const handler = (e: MouseEvent) => {
-      if (columnsRef.current && !columnsRef.current.contains(e.target as Node)) {
+      if (columnsOpen && columnsRef.current && !columnsRef.current.contains(e.target as Node)) {
         setColumnsOpen(false);
+      }
+      if (filtersOpen && filtersRef.current && !filtersRef.current.contains(e.target as Node)) {
+        setFiltersOpen(false);
       }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, [columnsOpen]);
+  }, [columnsOpen, filtersOpen]);
 
   const show = (col: Column) => visibleColumns.has(col);
 
@@ -152,6 +171,24 @@ export default function GuestListSection({ households: initialHouseholds }: Prop
     return { totalInvited, attending, declined, pending };
   }, [households]);
 
+  const toggleSort = (field: SortField) => {
+    setSort((prev) => {
+      if (prev?.field !== field) return { field, direction: "asc" };
+      if (prev.direction === "asc") return { field, direction: "desc" };
+      return null;
+    });
+  };
+
+  const SortIcon = ({ field }: { field: SortField }) => {
+    if (sort?.field !== field) return <ArrowUpDown className="h-3 w-3 ml-1 opacity-40" />;
+    return sort.direction === "asc"
+      ? <ArrowUp className="h-3 w-3 ml-1" />
+      : <ArrowDown className="h-3 w-3 ml-1" />;
+  };
+
+  const activeFilterCount =
+    (textedFilter !== "all" ? 1 : 0) + (dietaryFilter !== "all" ? 1 : 0);
+
   const filtered = useMemo(() => {
     let list = households;
 
@@ -170,8 +207,42 @@ export default function GuestListSection({ households: initialHouseholds }: Prop
       });
     }
 
+    if (textedFilter !== "all") {
+      list = list.filter((h) =>
+        textedFilter === "yes" ? h.texted : !h.texted
+      );
+    }
+
+    if (dietaryFilter !== "all") {
+      list = list.filter((h) =>
+        dietaryFilter === "has_notes" ? !!h.dietaryNotes : !h.dietaryNotes
+      );
+    }
+
+    if (sort) {
+      const statusOrder = { attending: 0, pending: 1, not_attending: 2 };
+      list = [...list].sort((a, b) => {
+        let cmp = 0;
+        switch (sort.field) {
+          case "household":
+            cmp = a.headOfHousehold.localeCompare(b.headOfHousehold);
+            break;
+          case "status":
+            cmp = statusOrder[getHouseholdStatus(a)] - statusOrder[getHouseholdStatus(b)];
+            break;
+          case "guests":
+            cmp = countAttendingGuests(a) - countAttendingGuests(b);
+            break;
+          case "responded":
+            cmp = (a.submittedAt || "").localeCompare(b.submittedAt || "");
+            break;
+        }
+        return sort.direction === "asc" ? cmp : -cmp;
+      });
+    }
+
     return list;
-  }, [households, filter, search]);
+  }, [households, filter, search, sort, textedFilter, dietaryFilter]);
 
   const toggleFilter = (target: Filter) => {
     setFilter((prev) => (prev === target ? "all" : target));
@@ -337,6 +408,70 @@ export default function GuestListSection({ households: initialHouseholds }: Prop
             className="pl-9"
           />
         </div>
+        <div className="relative" ref={filtersRef}>
+          <Button
+            variant="outline"
+            size="default"
+            onClick={() => setFiltersOpen((p) => !p)}
+            title="Filter columns"
+          >
+            <Filter className="h-4 w-4" />
+            <span className="hidden sm:inline">Filters</span>
+            {activeFilterCount > 0 && (
+              <span className="ml-1 rounded-full bg-primary text-primary-foreground text-xs w-5 h-5 flex items-center justify-center">
+                {activeFilterCount}
+              </span>
+            )}
+          </Button>
+          {filtersOpen && (
+            <div className="absolute right-0 top-full mt-1 z-50 w-52 rounded-lg border border-border bg-popover p-3 shadow-md space-y-3">
+              <div>
+                <p className="text-xs font-medium text-muted-foreground mb-1.5">Texted</p>
+                <div className="flex gap-1">
+                  {([["all", "All"], ["yes", "Yes"], ["no", "No"]] as const).map(([val, label]) => (
+                    <button
+                      key={val}
+                      onClick={() => setTextedFilter(val)}
+                      className={`px-2.5 py-1 text-xs rounded-md border transition-colors ${
+                        textedFilter === val
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "border-border hover:bg-muted"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-muted-foreground mb-1.5">Dietary Notes</p>
+                <div className="flex gap-1">
+                  {([["all", "All"], ["has_notes", "Has Notes"], ["no_notes", "None"]] as const).map(([val, label]) => (
+                    <button
+                      key={val}
+                      onClick={() => setDietaryFilter(val)}
+                      className={`px-2.5 py-1 text-xs rounded-md border transition-colors ${
+                        dietaryFilter === val
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "border-border hover:bg-muted"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {activeFilterCount > 0 && (
+                <button
+                  onClick={() => { setTextedFilter("all"); setDietaryFilter("all"); }}
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Clear all filters
+                </button>
+              )}
+            </div>
+          )}
+        </div>
         <div className="relative" ref={columnsRef}>
           <Button
             variant="outline"
@@ -374,13 +509,35 @@ export default function GuestListSection({ households: initialHouseholds }: Prop
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Household</TableHead>
+                <TableHead>
+                  <button onClick={() => toggleSort("household")} className="flex items-center hover:text-foreground transition-colors">
+                    Household <SortIcon field="household" />
+                  </button>
+                </TableHead>
                 {show("members") && <TableHead>Members</TableHead>}
-                {show("status") && <TableHead>Status</TableHead>}
-                {show("guests") && <TableHead>Guests</TableHead>}
+                {show("status") && (
+                  <TableHead>
+                    <button onClick={() => toggleSort("status")} className="flex items-center hover:text-foreground transition-colors">
+                      Status <SortIcon field="status" />
+                    </button>
+                  </TableHead>
+                )}
+                {show("guests") && (
+                  <TableHead>
+                    <button onClick={() => toggleSort("guests")} className="flex items-center hover:text-foreground transition-colors">
+                      Guests <SortIcon field="guests" />
+                    </button>
+                  </TableHead>
+                )}
                 {show("dietary") && <TableHead>Dietary</TableHead>}
                 {show("texted") && <TableHead>Texted</TableHead>}
-                {show("responded") && <TableHead>Responded</TableHead>}
+                {show("responded") && (
+                  <TableHead>
+                    <button onClick={() => toggleSort("responded")} className="flex items-center hover:text-foreground transition-colors">
+                      Responded <SortIcon field="responded" />
+                    </button>
+                  </TableHead>
+                )}
               </TableRow>
             </TableHeader>
             <TableBody>
