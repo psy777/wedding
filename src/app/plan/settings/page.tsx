@@ -33,6 +33,7 @@ export default async function SettingsPage() {
         venueMapUrl: s?.venueMapUrl ?? "",
         totalBudget: s?.totalBudget ?? 0,
         rsvpDeadline: s?.rsvpDeadline ?? "",
+        guestCap: s?.guestCap ?? 0,
         dressCode: s?.dressCode ?? "",
         directions: s?.directions ?? "",
         parking: s?.parking ?? "",

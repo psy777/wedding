@@ -23,6 +23,7 @@ export const weddingSettings = pgTable("wedding_settings", {
   ceremonyTime: text("ceremony_time").default(""),
   receptionTime: text("reception_time").default(""),
   rsvpDeadline: text("rsvp_deadline").default(""),
+  guestCap: integer("guest_cap"),
   dressCode: text("dress_code").default(""),
   directions: text("directions").default(""),
   parking: text("parking").default(""),

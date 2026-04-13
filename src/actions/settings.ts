@@ -51,6 +51,7 @@ export async function updateSettings(data: {
   venueMapUrl?: string;
   totalBudget?: number;
   rsvpDeadline?: string;
+  guestCap?: number;
   dressCode?: string;
   directions?: string;
   parking?: string;

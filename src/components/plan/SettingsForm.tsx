@@ -51,6 +51,7 @@ interface Settings {
   venueMapUrl: string;
   totalBudget: number;
   rsvpDeadline: string;
+  guestCap: number;
   dressCode: string;
   directions: string;
   parking: string;
@@ -341,7 +342,7 @@ export default function SettingsForm({
           <CardTitle className="font-heading">Planning</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="totalBudget">Total Budget</Label>
               <div className="relative">
@@ -360,6 +361,16 @@ export default function SettingsForm({
               </div>
             </div>
             <div className="space-y-2">
+              <Label htmlFor="dressCode">Dress Code</Label>
+              <Input
+                id="dressCode"
+                value={form.dressCode}
+                onChange={(e) => set("dressCode", e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
               <Label htmlFor="rsvpDeadline">RSVP Deadline</Label>
               <Input
                 id="rsvpDeadline"
@@ -369,12 +380,20 @@ export default function SettingsForm({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="dressCode">Dress Code</Label>
+              <Label htmlFor="guestCap">Guest Cap</Label>
               <Input
-                id="dressCode"
-                value={form.dressCode}
-                onChange={(e) => set("dressCode", e.target.value)}
+                id="guestCap"
+                type="number"
+                min={0}
+                placeholder="No limit"
+                value={form.guestCap || ""}
+                onChange={(e) =>
+                  set("guestCap", parseInt(e.target.value) || 0)
+                }
               />
+              <p className="text-xs text-muted-foreground">
+                RSVP closes automatically when this many guests are attending. Leave empty for no limit.
+              </p>
             </div>
           </div>
         </CardContent>
