@@ -27,25 +27,21 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Trash2, Calendar as CalendarIcon, Search, X } from "lucide-react";
+import {
+  PX_PER_MIN,
+  DAY_MINUTES,
+  DEFAULT_COLOR,
+  fmtTime,
+  isLightColor,
+  formatDateHeading,
+  computeLayout,
+  type ScheduleEvent,
+} from "@/lib/schedule";
 
-const PX_PER_MIN = 1;
-const DAY_MINUTES = 1440;
-const SNAP = 5;
+const SNAP = 15;
 const DEFAULT_DURATION = 30;
 const RESIZE_HANDLE_PX = 6;
 const CLICK_THRESHOLD_PX = 3;
-const DEFAULT_COLOR = "#7a8a6a";
-
-interface ScheduleEvent {
-  id: number;
-  title: string;
-  startMinutes: number;
-  endMinutes: number;
-  color: string;
-  notes: string;
-  location: string;
-  person: string;
-}
 
 interface Props {
   events: ScheduleEvent[];
@@ -80,14 +76,6 @@ function clamp(n: number, lo: number, hi: number) {
   return Math.max(lo, Math.min(hi, n));
 }
 
-function fmtTime(min: number) {
-  const h24 = Math.floor(min / 60);
-  const m = min % 60;
-  const period = h24 >= 12 ? "PM" : "AM";
-  const h = h24 % 12 === 0 ? 12 : h24 % 12;
-  return `${h}:${m.toString().padStart(2, "0")} ${period}`;
-}
-
 function fmtTimeInput(min: number) {
   const h = Math.floor(min / 60);
   const m = min % 60;
@@ -101,61 +89,6 @@ function parseTimeInput(value: string): number | null {
   const mm = parseInt(m[2], 10);
   if (h < 0 || h > 23 || mm < 0 || mm > 59) return null;
   return h * 60 + mm;
-}
-
-function isLightColor(hex: string) {
-  if (!/^#[0-9a-fA-F]{6}$/.test(hex)) return false;
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.6;
-}
-
-function formatDateHeading(iso: string): string {
-  if (!iso) return "Wedding Day";
-  const [y, m, d] = iso.split("-").map((s) => parseInt(s, 10));
-  if (!y || !m || !d) return "Wedding Day";
-  const date = new Date(y, m - 1, d);
-  return date.toLocaleDateString(undefined, {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  });
-}
-
-interface Layout {
-  lane: number;
-  cols: number;
-}
-
-function computeLayout(events: ScheduleEvent[]): Map<number, Layout> {
-  const sorted = [...events].sort(
-    (a, b) =>
-      a.startMinutes - b.startMinutes || b.endMinutes - a.endMinutes
-  );
-  const out = new Map<number, Layout>();
-  let cluster: { id: number; lane: number }[] = [];
-  let active: { id: number; end: number; lane: number }[] = [];
-
-  function closeCluster() {
-    if (cluster.length === 0) return;
-    const cols = cluster.reduce((max, c) => Math.max(max, c.lane + 1), 1);
-    for (const c of cluster) out.set(c.id, { lane: c.lane, cols });
-    cluster = [];
-  }
-
-  for (const ev of sorted) {
-    active = active.filter((a) => a.end > ev.startMinutes);
-    if (active.length === 0) closeCluster();
-    const usedLanes = new Set(active.map((a) => a.lane));
-    let lane = 0;
-    while (usedLanes.has(lane)) lane++;
-    active.push({ id: ev.id, end: ev.endMinutes, lane });
-    cluster.push({ id: ev.id, lane });
-  }
-  closeCluster();
-  return out;
 }
 
 export default function ScheduleSection({
