@@ -9,12 +9,14 @@ import {
   DollarSign,
   Users,
   ClipboardList,
+  Calendar,
   Settings,
 } from "lucide-react";
 
 const NAV_ITEMS = [
   { href: "/plan", label: "Overview", icon: LayoutDashboard },
   { href: "/plan/checklist", label: "Checklist", icon: CheckSquare },
+  { href: "/plan/schedule", label: "Schedule", icon: Calendar },
   { href: "/plan/budget", label: "Budget", icon: DollarSign },
   { href: "/plan/guests", label: "Guests", icon: ClipboardList },
   { href: "/plan/seating", label: "Seating", icon: Users },

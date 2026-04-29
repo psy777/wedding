@@ -115,3 +115,16 @@ export const seatingGuests = pgTable("seating_guests", {
   }),
   createdAt: timestamp("created_at").defaultNow(),
 });
+
+export const scheduleEvents = pgTable("schedule_events", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull().default(""),
+  startMinutes: integer("start_minutes").notNull(),
+  endMinutes: integer("end_minutes").notNull(),
+  color: text("color").notNull().default("#7a8a6a"),
+  notes: text("notes").default(""),
+  location: text("location").default(""),
+  person: text("person").default(""),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
