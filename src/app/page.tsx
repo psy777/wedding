@@ -22,22 +22,32 @@ function RegistrySection() {
           Anniversary Adventure
         </SectionLabel>
         <h2 className="font-heading text-2xl sm:text-3xl md:text-4xl text-ink font-light mb-6 sm:mb-8">
-          Help Us Get to Paradise
+          Registry
         </h2>
 
         <p className="text-base sm:text-xl text-clay leading-relaxed font-body mb-8 sm:mb-10">
-          Instead of a traditional registry, we&apos;re saving for a
-          once-in-a-lifetime trip to Bora Bora for our one year anniversary.
           Your presence is the greatest gift — but if you&apos;d like to
-          contribute, we&apos;d love your help getting there.
+          celebrate with something more, we&apos;ve set up a Target registry
+          for our home, and we&apos;re also saving for a once-in-a-lifetime
+          trip to Bora Bora for our one year anniversary.
         </p>
 
-        <Link
-          href="/borabora"
-          className="inline-flex items-center justify-center rounded-lg bg-primary text-primary-foreground text-lg py-4 px-10 uppercase tracking-[0.1em] hover:bg-primary/80 transition-colors duration-300"
-        >
-          Explore Our Trip
-        </Link>
+        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+          <a
+            href="https://www.target.com/gift-registry/gift/caleb-82"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center rounded-lg bg-primary text-primary-foreground text-lg py-4 px-10 uppercase tracking-[0.1em] hover:bg-primary/80 transition-colors duration-300"
+          >
+            Target Registry
+          </a>
+          <Link
+            href="/borabora"
+            className="inline-flex items-center justify-center rounded-lg border border-primary text-primary text-lg py-4 px-10 uppercase tracking-[0.1em] hover:bg-primary hover:text-primary-foreground transition-colors duration-300"
+          >
+            Bora Bora Fund
+          </Link>
+        </div>
       </div>
     </section>
   );

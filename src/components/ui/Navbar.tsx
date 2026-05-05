@@ -45,7 +45,7 @@ export default function Navbar({ partner1, partner2 }: Props) {
                 Travel
               </Link>
               <Link
-                href="/borabora"
+                href="/#registry"
                 className="text-base lg:text-lg text-clay hover:text-ink transition-colors duration-300 tracking-[0.05em] uppercase font-body"
               >
                 Registry
@@ -110,7 +110,7 @@ export default function Navbar({ partner1, partner2 }: Props) {
               Travel
             </Link>
             <Link
-              href="/borabora"
+              href="/#registry"
               className="text-xl text-clay hover:text-ink tracking-[0.05em] uppercase font-body"
               onClick={() => setMenuOpen(false)}
             >
