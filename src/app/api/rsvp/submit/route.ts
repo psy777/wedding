@@ -39,12 +39,20 @@ export async function POST(request: NextRequest): Promise<NextResponse<SubmitRes
       );
     }
 
-    // Validate mailing address
-    if (!formData.streetAddress?.trim() || !formData.city?.trim() || !formData.state?.trim() || !formData.zip?.trim()) {
-      return NextResponse.json(
-        { success: false, error: "Please provide your full mailing address." },
-        { status: 400 }
-      );
+    // Determine if anyone is attending; only require address if so
+    const anyoneAttending =
+      formData.headAttending === "attending" ||
+      Object.values(formData.familyAttending || {}).some((v) => v === "attending") ||
+      formData.plusOneAttending === "attending" ||
+      (formData.childrenCount || 0) > 0;
+
+    if (anyoneAttending) {
+      if (!formData.streetAddress?.trim() || !formData.city?.trim() || !formData.state?.trim() || !formData.zip?.trim()) {
+        return NextResponse.json(
+          { success: false, error: "Please provide your full mailing address." },
+          { status: 400 }
+        );
+      }
     }
 
     // Read settings from DB (deadline + guest cap)

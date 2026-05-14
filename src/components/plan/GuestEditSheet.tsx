@@ -178,8 +178,15 @@ export default function GuestEditSheet({
       }
 
       // Build updated household for optimistic update
+      const hasResponse =
+        form.headAttending !== "" ||
+        form.familyAttending.some((v) => v !== "") ||
+        form.plusOneAttending !== "" ||
+        (parseInt(form.childrenCount, 10) || 0) > 0;
+      const nowIso = new Date().toISOString();
       const updated: HouseholdData = {
         ...household,
+        submittedAt: household.submittedAt || (hasResponse ? nowIso : ""),
         headOfHousehold: form.headOfHousehold,
         phone: form.phone,
         familyMembers: form.familyMembers.filter(Boolean),

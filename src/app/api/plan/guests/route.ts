@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { updateHouseholdFields, deleteHouseholdRow } from "@/lib/google-sheets";
+import { updateHouseholdFields, deleteHouseholdRow, appendToLog, lookupHousehold } from "@/lib/google-sheets";
 
 // PUT - Full household edit
 export async function PUT(request: NextRequest) {
@@ -18,10 +18,49 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // Add updated_at timestamp
-    fields.updated_at = new Date().toISOString();
+    const now = new Date().toISOString();
+    fields.updated_at = now;
+
+    // If a response is recorded but the household has never submitted, stamp
+    // submitted_at so the guest moves out of "pending" on the guests page.
+    const hasResponse =
+      (fields.head_attending && fields.head_attending !== "") ||
+      (fields.family_attending && fields.family_attending !== "") ||
+      (fields.plus_one_attending && fields.plus_one_attending !== "") ||
+      (fields.children_count && fields.children_count !== "0" && fields.children_count !== "");
+    if (hasResponse) {
+      const existing = await lookupHousehold(householdCode);
+      if (!existing?.submittedAt) {
+        fields.submitted_at = now;
+      }
+    }
 
     await updateHouseholdFields(rowIndex, householdCode, fields);
+
+    // Append to audit log so manual edits are recorded alongside RSVP submissions
+    try {
+      await appendToLog(householdCode, {
+        headAttending: fields.head_attending ?? "",
+        familyAttending: (fields.family_attending ?? "")
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean),
+        plusOneName: fields.plus_one_name ?? "",
+        plusOneAttending: fields.plus_one_attending ?? "",
+        childrenNames: (fields.children_names ?? "")
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean),
+        childrenCount: parseInt(fields.children_count ?? "0", 10) || 0,
+        streetAddress: fields.street_address ?? "",
+        city: fields.city ?? "",
+        state: fields.state ?? "",
+        zip: fields.zip ?? "",
+        dietaryNotes: fields.dietary_notes ?? "",
+      });
+    } catch (logErr) {
+      console.error("Audit log append failed:", logErr);
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

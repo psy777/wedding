@@ -359,7 +359,7 @@ async function ensureLogSheet(): Promise<void> {
   }
 }
 
-async function appendToLog(
+export async function appendToLog(
   householdCode: string,
   data: {
     headAttending: string;

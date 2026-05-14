@@ -101,12 +101,20 @@ export default function RSVPForm({
   } | null>(null);
   const [addressInvalid, setAddressInvalid] = useState(false);
 
-  const canSubmit =
-    state.headAttending !== "" &&
+  const anyoneAttending =
+    state.headAttending === "attending" ||
+    Object.values(state.familyAttending).some((v) => v === "attending") ||
+    state.plusOneAttending === "attending";
+
+  const addressComplete =
     state.streetAddress.trim() !== "" &&
     state.city.trim() !== "" &&
     state.state.trim() !== "" &&
-    state.zip.trim() !== "" &&
+    state.zip.trim() !== "";
+
+  const canSubmit =
+    state.headAttending !== "" &&
+    (!anyoneAttending || addressComplete) &&
     !submitting;
 
   const submitRSVP = useCallback(async (formState: RSVPFormState) => {
@@ -130,6 +138,11 @@ export default function RSVPForm({
     setError("");
     setAddressSuggestion(null);
     setAddressInvalid(false);
+
+    if (!anyoneAttending) {
+      await submitRSVP(state);
+      return;
+    }
 
     try {
       const res = await fetch("/api/address/validate", {
@@ -268,7 +281,8 @@ export default function RSVPForm({
           />
         )}
 
-        {/* Address fields */}
+        {/* Address fields — only when at least one guest is attending (for sending a thank-you) */}
+        {anyoneAttending && (
         <AddressFields
           streetAddress={state.streetAddress}
           city={state.city}
@@ -281,6 +295,7 @@ export default function RSVPForm({
           onStateChange={(value) => dispatch({ type: "SET_STATE", value })}
           onZipChange={(value) => dispatch({ type: "SET_ZIP", value })}
         />
+        )}
 
         {/* Dietary notes */}
         <div className="py-5 border-b border-sand/50">
